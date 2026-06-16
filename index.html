@@ -357,7 +357,13 @@ function updateAuthButton(){
 
 function gdriveLogin(){
   if(!gdriveTokenClient){alert('API do Google ainda carregando. Aguarde alguns segundos.');return;}
-  gdriveTokenClient.requestAccessToken();
+  gdriveTokenClient.callback=function(resp){
+    if(resp.error){setDriveStatus('error');showWaitScreen();return;}
+    sessionStorage.setItem('gd_token',JSON.stringify({token:resp.access_token,expires:Date.now()+3500000}));
+    gdriveUser=true;updateAuthButton();
+    gdriveLoad();
+  };
+  gdriveTokenClient.requestAccessToken({prompt:'none'});
 }
 
 function gdriveLogout(){
@@ -373,23 +379,11 @@ async function getToken(){
     if(stored){
       try{
         var t=JSON.parse(stored);
-        if(t.expires>Date.now()+60000){resolve(t.token);return;} // 1min de margem
+        if(t.expires>Date.now()+60000){resolve(t.token);return;}
       }catch(e){}
     }
-    if(!gdriveTokenClient){reject('no client');return;}
-    gdriveTokenClient.callback=function(resp){
-      if(resp.error){
-        // Se falhou silencioso, marcar como deslogado
-        if(resp.error==='access_denied'||resp.error==='immediate_failed'){
-          gdriveUser=false;updateAuthButton();
-        }
-        reject(resp.error);return;
-      }
-      sessionStorage.setItem('gd_token',JSON.stringify({token:resp.access_token,expires:Date.now()+3500000}));
-      gdriveUser=true;updateAuthButton();
-      resolve(resp.access_token);
-    };
-    gdriveTokenClient.requestAccessToken({prompt:''});
+    // Sem cache — precisa de interação do usuário
+    reject('no_token');
   });
 }
 
@@ -467,7 +461,6 @@ function showWaitScreen(){
 }
 
 async function gdriveLoad(){
-  showWaitScreen();
   setDriveStatus('loading');
   try{
     var token=await getToken();
@@ -524,8 +517,6 @@ var _gsiCheck=setInterval(function(){
       }
     });
     updateAuthButton();
-    // Tentar auto-login silencioso (sem popup)
-    gdriveTokenClient.requestAccessToken({prompt:''});
   }
 },300);
 
@@ -1196,7 +1187,6 @@ document.querySelectorAll('.modal-overlay').forEach(function(o){
 });
 
 // ---- Init ----
-// Mostrar tela de espera — só exibe dados após Drive carregar
 showWaitScreen();
 </script>
 </body>
