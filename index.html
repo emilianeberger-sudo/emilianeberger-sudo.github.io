@@ -318,9 +318,16 @@ var MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','
 
 // ---- Storage ----
 function save(){
-  if(gdriveUser) gdriveSaveDebounced();
-  // localStorage só como cache de emergência, nunca como fonte primária
-  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(e){}
+  // Só salvar se tiver dados E estiver logado
+  if(gdriveUser && state && state.order && state.order.length > 0){
+    gdriveSaveDebounced();
+  }
+  // Manter localStorage como backup de emergência
+  try{
+    if(state && state.order && state.order.length > 0){
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+    }
+  }catch(e){}
 }
 function load(){} // desabilitado — fonte de dados é sempre o Drive
 
@@ -336,9 +343,11 @@ async function forceSave(){
 // ---- Google Drive ----
 var _saveTimer=null;
 function gdriveSaveDebounced(){
-  // Nunca salvar se state estiver vazio
-  if(!state.order||!state.order.length){console.warn('save bloqueado: state vazio');return;}
-  clearTimeout(_saveTimer);_saveTimer=setTimeout(gdriveSave,1500);setDriveStatus('saving');
+  if(!state||!state.order||!state.order.length||!state.monthOrder||!state.monthOrder.length){
+    console.warn('save BLOQUEADO — state vazio');return;
+  }
+  if(JSON.stringify(state).length < 100){console.warn('save BLOQUEADO — state pequeno');return;}
+  clearTimeout(_saveTimer);_saveTimer=setTimeout(gdriveSave,2000);setDriveStatus('saving');
 }
 
 function setDriveStatus(s){
@@ -418,8 +427,20 @@ async function findFileId(token){
 }
 
 async function gdriveSave(){
-  if(!state.order||!state.order.length){console.warn('gdriveSave bloqueado: state vazio');gdriveSyncing=false;return;}
+  // Proteção tripla: nunca salvar state vazio ou sem clientes/meses
+  if(!state||!state.order||!state.order.length||!state.monthOrder||!state.monthOrder.length){
+    console.warn('gdriveSave BLOQUEADO — state vazio ou incompleto');
+    gdriveSyncing=false;
+    return;
+  }
+  // Verificar tamanho mínimo — dados reais têm mais de 100 chars
+  if(JSON.stringify(state).length < 100){
+    console.warn('gdriveSave BLOQUEADO — state muito pequeno');
+    gdriveSyncing=false;
+    return;
+  }
   if(gdriveSyncing)return;gdriveSyncing=true;
+  console.log('gdriveSave: salvando', state.order.length, 'clientes,', state.monthOrder.length, 'meses');
   try{
     var token=await getToken();
     var blob=new Blob([JSON.stringify(state)],{type:'application/json'});
