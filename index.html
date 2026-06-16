@@ -171,7 +171,7 @@ input[type="date"]:focus{border-color:var(--info-text);background:var(--bg);outl
   <div class="header-actions">
     <span id="drive-status"></span>
     <button class="hbtn" id="btn-reload" onclick="gdriveLoad()" title="Recarregar dados do Drive">↺ recarregar</button>
-    <button class="hbtn" id="btn-backup" onclick="exportBackup()" title="Exportar backup JSON">⬇ backup</button>
+    <button class="hbtn" id="btn-backup" onclick="forceSave()" title="Salvar no Drive">salvar</button>
     <button class="hbtn" id="btn-drive" onclick="gdriveLogin()">☁ Entrar com Google</button>
   </div>
 </header>
@@ -319,15 +319,13 @@ function save(){
 }
 function load(){try{var s=localStorage.getItem(STORAGE_KEY);if(s)state=JSON.parse(s);}catch(e){}}
 
-// ---- Backup ----
-function exportBackup(){
-  var s=JSON.stringify(state,null,2);
-  var b=new Blob([s],{type:'application/json'});
-  var a=document.createElement('a');
-  a.href=URL.createObjectURL(b);
-  var d=new Date();
-  a.download='backup_dashboard_'+d.getFullYear()+(d.getMonth()+1+'').padStart(2,'0')+d.getDate()+'.json';
-  a.click();
+// ---- Salvar manualmente no Drive ----
+async function forceSave(){
+  if(!gdriveUser){
+    showAlert('Faça login com o Google primeiro.','warn');
+    return;
+  }
+  await gdriveSave();
 }
 
 // ---- Google Drive ----
@@ -646,7 +644,7 @@ function renderMonthView(){
   html+='<button class="chip'+(activePrazoFilter==='concluido'?' active':'')+' " onclick="setPrazoFilter(\'concluido\')">Concluídos</button>';
   html+='</div>';
   html+='<div style="display:flex;gap:6px;flex-wrap:wrap;">';
-  html+='<button class="btn" onclick="openGravacoes()">📹 gravações</button>';
+  html+='<button class="btn" onclick="openGravacoes()">gravações</button>';
   html+='<label style="cursor:pointer;"><span class="btn">↑ importar Excel</span><input type="file" accept=".xlsx,.xls" id="file-in" style="display:none;"></label>';
   html+='<button class="btn btn-primary" onclick="openAddDemand()">+ demanda</button>';
   html+='<button class="btn" onclick="openManageClients()">⚙ clientes</button>';
