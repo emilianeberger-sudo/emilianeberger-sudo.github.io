@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard — Audiovisual Resultate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" async defer></script>
 <style>
@@ -19,7 +22,7 @@
   --radius:8px; --radius-lg:12px;
   --yellow:#f5c400;
 }
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh;}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh;}
 
 /* Header */
 header{background:#111110;padding:0 2rem;display:flex;align-items:center;height:68px;gap:16px;}
@@ -44,7 +47,7 @@ header{background:#111110;padding:0 2rem;display:flex;align-items:center;height:
 
 /* Layout */
 .container{max-width:1140px;margin:0 auto;padding:1.25rem 1.5rem;}
-.btn{font-size:12px;padding:5px 12px;cursor:pointer;border-radius:99px;border:0.5px solid var(--border2);background:transparent;color:var(--text);font-family:inherit;display:inline-flex;align-items:center;gap:5px;transition:background .1s;white-space:nowrap;}
+.btn{font-size:12px;padding:5px 12px;cursor:pointer;border-radius:99px;border:0.5px solid var(--border2);background:transparent;color:var(--text);font-family:'Inter',inherit;display:inline-flex;align-items:center;gap:5px;transition:background .1s;white-space:nowrap;}
 .btn:hover{background:var(--bg2);}
 .btn-primary{background:var(--text);color:var(--bg);border-color:var(--text);}
 .btn-primary:hover{opacity:.82;}
@@ -55,9 +58,17 @@ header{background:#111110;padding:0 2rem;display:flex;align-items:center;height:
 .chip.active{background:var(--text);color:var(--bg);border-color:var(--text);}
 
 /* Métricas */
-.metric{background:var(--bg2);border-radius:var(--radius);padding:10px 14px;}
-.metric .lbl{font-size:11px;color:var(--text2);margin-bottom:3px;}
-.metric .val{font-size:22px;font-weight:500;}
+.metric{background:var(--bg);border-radius:var(--radius);padding:10px 14px;border:0.5px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,0.04);transition:box-shadow .15s,transform .15s;animation:fadeInUp .3s ease both;}
+.metric:hover{box-shadow:0 4px 12px rgba(0,0,0,0.08);transform:translateY(-1px);}
+.metric .lbl{font-size:11px;color:var(--text2);margin-bottom:3px;font-weight:500;letter-spacing:.02em;}
+.metric .val{font-size:22px;font-weight:600;}
+
+
+
+
+
+
+@keyframes fadeInUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 
 /* Progresso */
 .progress-wrap{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:1rem;}
@@ -65,7 +76,7 @@ header{background:#111110;padding:0 2rem;display:flex;align-items:center;height:
 .progress-label span{font-size:12px;color:var(--text2);}
 .progress-label strong{font-size:13px;color:var(--text);}
 .progress-bar-bg{background:var(--bg3);border-radius:99px;height:8px;overflow:hidden;}
-.progress-bar-fill{height:100%;border-radius:99px;background:var(--yellow);transition:width .4s ease;}
+.progress-bar-fill{height:100%;border-radius:99px;background:var(--yellow);transition:width .8s cubic-bezier(.4,0,.2,1);}
 
 /* Badges */
 .badge{display:inline-flex;align-items:center;font-size:11px;font-weight:500;padding:2px 8px;border-radius:99px;white-space:nowrap;position:relative;}
@@ -109,7 +120,8 @@ header{background:#111110;padding:0 2rem;display:flex;align-items:center;height:
 .dem-table th:hover{color:var(--text);}
 .dem-table td{padding:5px 8px;border-bottom:0.5px solid var(--border);vertical-align:middle;}
 .dem-table tr:last-child td{border-bottom:none;}
-.dem-table tr:hover td{background:var(--bg2);}
+.dem-table tbody tr:nth-child(even) td{background:rgba(0,0,0,0.015);}
+.dem-table tr:hover td{background:var(--bg2)!important;}
 .editable{cursor:text;border-radius:4px;display:block;min-height:24px;padding:2px 4px;outline:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .editable:hover{background:var(--bg3);}
 .editable:focus{outline:1.5px solid var(--info-text);background:var(--bg);white-space:normal;}
@@ -123,7 +135,7 @@ input[type="date"]:focus{border-color:var(--info-text);background:var(--bg);outl
 /* Modal */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:100;align-items:center;justify-content:center;}
 .modal-overlay.open{display:flex;}
-.modal{background:var(--bg);border-radius:var(--radius-lg);border:0.5px solid var(--border);padding:1.25rem;width:380px;max-width:92vw;max-height:90vh;overflow-y:auto;}
+.modal{background:var(--bg);border-radius:var(--radius-lg);border:0.5px solid var(--border);padding:1.25rem;width:380px;max-width:92vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.16);}
 .modal h2{font-size:14px;font-weight:500;margin-bottom:12px;}
 .modal label{font-size:12px;color:var(--text2);display:block;margin:10px 0 3px;}
 .modal input,.modal select,.modal textarea{width:100%;font-size:13px;padding:6px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);font-family:inherit;outline:none;}
@@ -550,7 +562,8 @@ function renderMonthTabs(){
     var m=state.months[mid];
     var btn=document.createElement('button');
     btn.className='month-tab'+(mid===activeMonth?' active':'');
-    btn.textContent=m.name;
+    var count=(m.demands||[]).length;
+    btn.textContent=m.name+(count?' ('+count+')':'');
     btn.onclick=(function(id){return function(){setActiveMonth(id);};})(mid);
     wrap.appendChild(btn);
   });
@@ -575,26 +588,36 @@ function renderMonthView(){
   var gravReal=gravacoes.filter(function(g){return g.status==='Realizada';}).length;
   var gravPend=gravacoes.filter(function(g){return g.status==='Pendente';}).length;
   var gravAgend=gravacoes.filter(function(g){return g.status==='Agendada';}).length;
+  var gravTotal=gravacoes.filter(function(g){return g.status!=='Não incluso';}).length;
   var pct=total>0?Math.round((done/total)*100):0;
 
   var html='<div class="container">';
 
   // Métricas
-  html+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:1rem;">'
-    +'<div class="metric"><p class="lbl">Total vídeos</p><p class="val">'+total+'</p></div>'
-    +'<div class="metric"><p class="lbl">Atrasados</p><p class="val" style="color:var(--danger-text)">'+late+'</p></div>'
-    +'<div class="metric"><p class="lbl">Hoje</p><p class="val" style="color:var(--info-text)">'+today+'</p></div>'
-    +'<div class="metric"><p class="lbl">No prazo</p><p class="val" style="color:var(--success-text)">'+ok+'</p></div>'
-    +'<div class="metric"><p class="lbl">Concluídos</p><p class="val" style="color:#1a4fa3">'+done+'</p></div>'
-    +'<div class="metric"><p class="lbl">Gravações realizadas</p><p class="val" style="color:var(--success-text)">'+gravReal+'</p></div>'
-    +'<div class="metric"><p class="lbl">Gravações agendadas</p><p class="val" style="color:var(--info-text)">'+gravAgend+'</p></div>'
-    +'<div class="metric"><p class="lbl">Gravações pendentes</p><p class="val" style="color:var(--warn-text)">'+gravPend+'</p></div>'
+  html+='<div style="margin-bottom:1rem;">'
+    // Bloco Gravações
+    +'<p style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Gravações</p>'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:12px;">'
+    +'<div class="metric metric-neutral"><p class="lbl">Total</p><p class="val">'+gravTotal+'</p></div>'
+    +'<div class="metric metric-ok"><p class="lbl">Realizadas</p><p class="val" style="color:var(--success-text)">'+gravReal+'</p></div>'
+    +'<div class="metric metric-today"><p class="lbl">Agendadas</p><p class="val" style="color:var(--info-text)">'+gravAgend+'</p></div>'
+    +'<div class="metric metric-warn"><p class="lbl">Pendentes</p><p class="val" style="color:var(--warn-text)">'+gravPend+'</p></div>'
+    +'</div>'
+    // Bloco Vídeos
+    +'<p style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Vídeos</p>'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;">'
+    +'<div class="metric metric-neutral"><p class="lbl">Total</p><p class="val">'+total+'</p></div>'
+    +'<div class="metric metric-late"><p class="lbl">Atrasados</p><p class="val" style="color:var(--danger-text)">'+late+'</p></div>'
+    +'<div class="metric metric-today"><p class="lbl">Hoje</p><p class="val" style="color:var(--info-text)">'+today+'</p></div>'
+    +'<div class="metric metric-ok"><p class="lbl">No prazo</p><p class="val" style="color:var(--success-text)">'+ok+'</p></div>'
+    +'<div class="metric metric-done"><p class="lbl">Concluídos</p><p class="val" style="color:#1a4fa3">'+done+'</p></div>'
+    +'</div>'
     +'</div>';
 
   // Progresso do mês
   html+='<div class="progress-wrap">'
     +'<div class="progress-label"><span>Progresso do mês</span><strong>'+done+' de '+total+' concluídos ('+pct+'%)</strong></div>'
-    +'<div class="progress-bar-bg"><div class="progress-bar-fill" style="width:'+pct+'%"></div></div>'
+    +'<div class="progress-bar-bg"><div class="progress-bar-fill" id="prog-bar" style="width:0%"></div></div>'
     +'</div>';
 
   // Filtros + ações
@@ -640,6 +663,11 @@ function renderMonthView(){
   renderTableRows(visD);
   bindFileInput();
   updateSortIcons();
+  // Animar barra de progresso
+  setTimeout(function(){
+    var bar=document.getElementById('prog-bar');
+    if(bar) bar.style.width=pct+'%';
+  }, 60);
 }
 
 function filterByClient(demands){
