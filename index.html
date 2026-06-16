@@ -365,18 +365,18 @@ function gdriveLogin(){
     return;
   }
   gdriveTokenClient.callback=function(resp){
+    if(window._loginTimeout){clearTimeout(window._loginTimeout);window._loginTimeout=null;}
     if(resp.error){
       console.error('Login error:', resp.error);
-      setDriveStatus('error');
-      // Mostrar botão de login novamente
+      setDriveStatus('idle');
       var wi=document.getElementById('wait-inner');
-      if(wi) wi.innerHTML='<p style="font-size:13px;color:var(--danger-text);margin-bottom:8px;">Erro ao conectar. Tente novamente.</p><button class="btn btn-primary" onclick="startLogin()">☁ Entrar com Google</button>';
+      if(wi) wi.innerHTML='<p style="font-size:13px;color:var(--text2);text-align:center;margin-bottom:8px;">Erro ao conectar.<br>Tente novamente.</p><button class="btn btn-primary" onclick="startLogin()">☁ Entrar com Google</button>';
       return;
     }
     sessionStorage.setItem('gd_token',JSON.stringify({token:resp.access_token,expires:Date.now()+3500000}));
     gdriveUser=true;
     updateAuthButton();
-    gdriveLoad(); // sempre carregar do Drive após login
+    gdriveLoad();
   };
   gdriveTokenClient.requestAccessToken({prompt:'select_account'});
 }
@@ -444,6 +444,15 @@ function startLogin(){
   if(wi) wi.innerHTML=
     '<div style="width:24px;height:24px;border:2.5px solid var(--border2);border-top-color:var(--yellow);border-radius:50%;animation:spin .8s linear infinite;"></div>'
     +'<p style="font-size:12px;color:var(--text3);">Conectando...</p>';
+  // Timeout de segurança — se não conectar em 12s, volta para o botão
+  var loginTimeout=setTimeout(function(){
+    var wi2=document.getElementById('wait-inner');
+    if(wi2&&wi2.querySelector('p')&&wi2.querySelector('p').textContent==='Conectando...'){
+      wi2.innerHTML='<p style="font-size:13px;color:var(--text2);text-align:center;margin-bottom:8px;">Não foi possível conectar.<br>Tente novamente.</p>'
+        +'<button class="btn btn-primary" onclick="startLogin()">☁ Entrar com Google</button>';
+    }
+  },12000);
+  window._loginTimeout=loginTimeout;
   gdriveLogin();
 }
 
