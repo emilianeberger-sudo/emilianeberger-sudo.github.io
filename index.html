@@ -620,31 +620,41 @@ function renderMonthView(){
     +'<div class="progress-bar-bg"><div class="progress-bar-fill" id="prog-bar" style="width:0%"></div></div>'
     +'</div>';
 
-  // Filtros + ações
-  html+='<div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:1rem;flex-wrap:wrap;">';
-  html+='<div style="flex:1;min-width:160px;"><div style="font-size:11px;color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em;">Cliente</div><div style="display:flex;gap:4px;flex-wrap:wrap;" id="client-chips"><button class="chip'+(activeClientFilter==='todos'?' active':'')+'" onclick="setClientFilter(\'todos\')">Todos</button>';
-  state.order.forEach(function(id){var c=state.clients[id];html+='<button class="chip'+(activeClientFilter===id?' active':'')+'" onclick="setClientFilter(\''+id+'\')"><span class="client-dot" style="background:'+c.color+'"></span>'+esc(c.name)+'</button>';});
-  html+='</div></div>';
-  html+='<div><div style="font-size:11px;color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em;">Prazo</div><div style="display:flex;gap:4px;flex-wrap:wrap;">'
-    +'<button class="chip'+(activePrazoFilter==='todos'?' active':'')+'" onclick="setPrazoFilter(\'todos\')">Todos</button>'
-    +'<button class="chip'+(activePrazoFilter==='atrasado'?' active':'')+'" onclick="setPrazoFilter(\'atrasado\')">Atrasados</button>'
-    +'<button class="chip'+(activePrazoFilter==='hoje'?' active':'')+'" onclick="setPrazoFilter(\'hoje\')">Hoje</button>'
-    +'<button class="chip'+(activePrazoFilter==='ok'?' active':'')+'" onclick="setPrazoFilter(\'ok\')">No prazo</button>'
-    +'<button class="chip'+(activePrazoFilter==='concluido'?' active':'')+'" onclick="setPrazoFilter(\'concluido\')">Concluídos</button>'
-    +'</div></div>';
-  html+='<div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end;">'
-    +'<button class="btn" onclick="openGravacoes()">📹 gravações</button>'
-    +'<label style="cursor:pointer;"><span class="btn">↑ importar Excel</span><input type="file" accept=".xlsx,.xls" id="file-in" style="display:none;"></label>'
-    +'<button class="btn btn-primary" onclick="openAddDemand()">+ demanda</button>'
-    +'<button class="btn" onclick="openManageClients()">⚙ clientes</button>'
-    +'<button class="btn btn-danger" onclick="deleteMonth()">🗑 mês</button>'
-    +'</div>';
-  html+='</div>';
   html+='<div id="alert-area"></div>';
+
+  // Layout sidebar + conteudo
+  html+='<div style="display:flex;gap:16px;align-items:flex-start;">';
+
+  // Sidebar clientes
+  html+='<div style="width:155px;flex-shrink:0;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:12px;position:sticky;top:16px;">';
+  html+='<p style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Cliente</p>';
+  html+='<div style="display:flex;flex-direction:column;gap:3px;" id="client-chips">';
+  html+='<button class="chip'+(activeClientFilter==='todos'?' active':'')+' " onclick="setClientFilter(\'todos\')" style="text-align:left;border-radius:6px;justify-content:flex-start;">Todos</button>';
+  state.order.forEach(function(id){var c=state.clients[id];html+='<button class="chip'+(activeClientFilter===id?' active':'')+' " onclick="setClientFilter(\''+id+'\')" style="text-align:left;border-radius:6px;justify-content:flex-start;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;"><span class="client-dot" style="background:'+c.color+'"></span>'+esc(c.name)+'</button>';});
+  html+='</div></div>';
+
+  // Conteudo direito
+  html+='<div style="flex:1;min-width:0;">';
+
+  // Acoes + filtro prazo
+  html+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:1rem;">';
+  html+='<div style="display:flex;gap:4px;flex-wrap:wrap;flex:1;">';
+  html+='<button class="chip'+(activePrazoFilter==='todos'?' active':'')+' " onclick="setPrazoFilter(\'todos\')">Todos</button>';
+  html+='<button class="chip'+(activePrazoFilter==='atrasado'?' active':'')+' " onclick="setPrazoFilter(\'atrasado\')">Atrasados</button>';
+  html+='<button class="chip'+(activePrazoFilter==='hoje'?' active':'')+' " onclick="setPrazoFilter(\'hoje\')">Hoje</button>';
+  html+='<button class="chip'+(activePrazoFilter==='ok'?' active':'')+' " onclick="setPrazoFilter(\'ok\')">No prazo</button>';
+  html+='<button class="chip'+(activePrazoFilter==='concluido'?' active':'')+' " onclick="setPrazoFilter(\'concluido\')">Concluídos</button>';
+  html+='</div>';
+  html+='<div style="display:flex;gap:6px;flex-wrap:wrap;">';
+  html+='<button class="btn" onclick="openGravacoes()">📹 gravações</button>';
+  html+='<label style="cursor:pointer;"><span class="btn">↑ importar Excel</span><input type="file" accept=".xlsx,.xls" id="file-in" style="display:none;"></label>';
+  html+='<button class="btn btn-primary" onclick="openAddDemand()">+ demanda</button>';
+  html+='<button class="btn" onclick="openManageClients()">⚙ clientes</button>';
+  html+='<button class="btn btn-danger" onclick="deleteMonth()">🗑 mês</button>';
+  html+='</div></div>';
 
   // Tabela
   html+='<div class="card"><div style="overflow-x:auto;"><table class="dem-table"><thead><tr>'
-    +'<th onclick="doSort(\'cliente\')" style="min-width:100px;">Cliente <span id="sort-cliente"></span></th>'
     +'<th onclick="doSort(\'escopo\')" style="min-width:80px;">Escopo <span id="sort-escopo"></span></th>'
     +'<th onclick="doSort(\'situacao\')" style="min-width:110px;">Situação <span id="sort-situacao"></span></th>'
     +'<th onclick="doSort(\'prazo\')" style="min-width:120px;">1ª entrega <span id="sort-prazo"></span></th>'
@@ -657,7 +667,10 @@ function renderMonthView(){
     +'<div id="empty-msg" style="display:none;text-align:center;padding:2.5rem;font-size:13px;color:var(--text2);">Nenhuma demanda encontrada.</div>'
     +'</div>'
     +'<p class="row-count" id="row-count"></p>';
-  html+='</div>';
+
+  html+='</div>'; // fim conteudo direito
+  html+='</div>'; // fim layout sidebar
+  html+='</div>'; // fim container
   view.innerHTML=html;
 
   renderTableRows(visD);
@@ -713,7 +726,7 @@ function renderTableRows(rows){
     var badgeHtml='<span class="badge '+st.cls+(row.obs?' badge-obs':'')+'"'+obsAttr+' onclick="openObs(\''+row.id+'\')" title="'+(row.obs?'Ver/editar observação':'Adicionar observação')+'" style="cursor:pointer;">'+st.label+obsDot+'</span>';
     var tr=document.createElement('tr');
     tr.innerHTML=
-      '<td><span style="display:inline-flex;align-items:center;"><span class="client-dot" style="background:'+clientColor(row.clientId)+'"></span><span style="font-size:12px;">'+esc(clientName(row.clientId))+'</span></span></td>'+
+      
       '<td><span class="editable" contenteditable="true" data-id="'+row.id+'" data-field="escopo">'+esc(row.escopo||'')+'</span></td>'+
       '<td><select class="inline-select" data-id="'+row.id+'" data-field="situacao">'+sitOpts+'</select></td>'+
       '<td><input type="date" value="'+(row.prazo||'')+'" data-id="'+row.id+'" data-field="prazo"></td>'+
