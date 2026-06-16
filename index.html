@@ -318,14 +318,10 @@ var MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','
 
 // ---- Storage ----
 function save(){
-  // Só salvar se tiver dados E estiver logado
-  if(gdriveUser && state && state.order && state.order.length > 0){
-    gdriveSaveDebounced();
-  }
-  // Manter localStorage como backup de emergência
+  // Salvar APENAS no localStorage — Drive só via botão manual "salvar"
   try{
     if(state && state.order && state.order.length > 0){
-      localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     }
   }catch(e){}
 }
@@ -333,11 +329,41 @@ function load(){} // desabilitado — fonte de dados é sempre o Drive
 
 // ---- Salvar manualmente no Drive ----
 async function forceSave(){
-  if(!gdriveUser){
-    showAlert('Faça login com o Google primeiro.','warn');
-    return;
+  if(!gdriveUser){showAlert('Faça login com o Google primeiro.','warn');return;}
+  var local = null;
+  try{ local = JSON.parse(localStorage.getItem(STORAGE_KEY)); }catch(e){}
+  if(local && local.order && local.order.length > 0) state = local;
+  if(!state || !state.order || !state.order.length){showAlert('Nenhum dado para salvar.','warn');return;}
+  var stored = sessionStorage.getItem('gd_token');
+  if(!stored){showAlert('Token expirado. Faça login novamente.','warn');return;}
+  var t = JSON.parse(stored);
+  if(t.expires <= Date.now()){showAlert('Sessão expirada. Faça login novamente.','warn');return;}
+  var token = t.token;
+  var fid = gdriveFileId || await findFileId(token);
+  if(!fid){showAlert('Arquivo não encontrado no Drive.','warn');return;}
+  gdriveFileId = fid;
+  setDriveStatus('saving');
+  try{
+    // Usar fetch diretamente com string JSON — método que funciona
+    var body = JSON.stringify(state);
+    var r = await fetch('https://www.googleapis.com/upload/drive/v3/files/'+fid+'?uploadType=media',{
+      method:'PATCH',
+      headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+      body: body
+    });
+    var result = await r.json();
+    if(result.id){
+      console.log('forceSave OK — tamanho:', body.length);
+      setDriveStatus('saved');
+      setTimeout(function(){setDriveStatus('idle');},3000);
+    } else {
+      throw new Error(JSON.stringify(result));
+    }
+  }catch(e){
+    console.error('forceSave erro:',e);
+    setDriveStatus('error');
+    showAlert('Erro ao salvar. Tente novamente.','warn');
   }
-  await gdriveSave();
 }
 
 // ---- Google Drive ----
