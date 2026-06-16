@@ -172,7 +172,7 @@ input[type="date"]:focus{border-color:var(--info-text);background:var(--bg);outl
   </div>
   <div class="header-actions">
     <span id="drive-status"></span>
-    <button class="hbtn" id="btn-reload" onclick="gdriveLoad()" title="Recarregar dados do Drive">atualizar</button>
+    <button class="hbtn" id="btn-reload" onclick="atualizarDrive()" title="Recarregar dados do Drive">atualizar</button>
     <button class="hbtn" id="btn-backup" onclick="forceSave()" title="Salvar no Drive">salvar</button>
     <button class="hbtn" id="btn-drive" onclick="gdriveLogin()">☁ Entrar com Google</button>
   </div>
@@ -335,7 +335,11 @@ async function forceSave(){
 
 // ---- Google Drive ----
 var _saveTimer=null;
-function gdriveSaveDebounced(){clearTimeout(_saveTimer);_saveTimer=setTimeout(gdriveSave,1500);setDriveStatus('saving');}
+function gdriveSaveDebounced(){
+  // Nunca salvar se state estiver vazio
+  if(!state.order||!state.order.length){console.warn('save bloqueado: state vazio');return;}
+  clearTimeout(_saveTimer);_saveTimer=setTimeout(gdriveSave,1500);setDriveStatus('saving');
+}
 
 function setDriveStatus(s){
   var el=document.getElementById('drive-status');if(!el)return;
@@ -356,14 +360,25 @@ function updateAuthButton(){
 }
 
 function gdriveLogin(){
-  if(!gdriveTokenClient){alert('API do Google ainda carregando. Aguarde alguns segundos.');return;}
+  if(!gdriveTokenClient){
+    setTimeout(gdriveLogin, 500); // aguardar lib carregar
+    return;
+  }
   gdriveTokenClient.callback=function(resp){
-    if(resp.error){setDriveStatus('error');showWaitScreen();return;}
+    if(resp.error){
+      console.error('Login error:', resp.error);
+      setDriveStatus('error');
+      // Mostrar botão de login novamente
+      var wi=document.getElementById('wait-inner');
+      if(wi) wi.innerHTML='<p style="font-size:13px;color:var(--danger-text);margin-bottom:8px;">Erro ao conectar. Tente novamente.</p><button class="btn btn-primary" onclick="startLogin()">☁ Entrar com Google</button>';
+      return;
+    }
     sessionStorage.setItem('gd_token',JSON.stringify({token:resp.access_token,expires:Date.now()+3500000}));
-    gdriveUser=true;updateAuthButton();
-    gdriveLoad();
+    gdriveUser=true;
+    updateAuthButton();
+    gdriveLoad(); // sempre carregar do Drive após login
   };
-  gdriveTokenClient.requestAccessToken({prompt:'none'});
+  gdriveTokenClient.requestAccessToken({prompt:'select_account'});
 }
 
 function gdriveLogout(){
@@ -403,6 +418,7 @@ async function findFileId(token){
 }
 
 async function gdriveSave(){
+  if(!state.order||!state.order.length){console.warn('gdriveSave bloqueado: state vazio');gdriveSyncing=false;return;}
   if(gdriveSyncing)return;gdriveSyncing=true;
   try{
     var token=await getToken();
@@ -460,43 +476,75 @@ function showWaitScreen(){
     +'</div>';
 }
 
+async function atualizarDrive(){
+  // Atualizar sem mostrar tela de login — só busca do Drive se tiver token
+  var stored=sessionStorage.getItem('gd_token');
+  if(!stored){showAlert('Faça login primeiro.','warn');return;}
+  var t; try{t=JSON.parse(stored);}catch(e){showAlert('Sessão inválida. Faça login novamente.','warn');return;}
+  if(t.expires<=Date.now()){showAlert('Sessão expirada. Faça login novamente.','warn');gdriveUser=false;updateAuthButton();return;}
+  setDriveStatus('loading');
+  try{
+    var fid=await findFileId(t.token);
+    if(!fid){showAlert('Nenhum dado encontrado no Drive.','warn');setDriveStatus('idle');return;}
+    gdriveFileId=fid;
+    var r=await apiFetch('GET','https://www.googleapis.com/drive/v3/files/'+fid+'?alt=media',null,t.token);
+    var data=await r.json();
+    if(data&&data.months&&data.order&&data.order.length>0){
+      state=data;
+      if(state.monthOrder&&state.monthOrder.length)activeMonth=state.monthOrder[0];
+      else activeMonth=null;
+      renderAll();
+      setDriveStatus('saved');setTimeout(function(){setDriveStatus('idle');},3000);
+    } else {
+      console.warn('atualizarDrive: Drive vazio, ignorando');
+      showAlert('Drive sem dados. Use o navegador com os dados para salvar primeiro.','warn');
+      setDriveStatus('idle');
+    }
+  }catch(e){
+    console.error('Atualizar erro:',e);
+    setDriveStatus('error');
+  }
+}
+
 async function gdriveLoad(){
   setDriveStatus('loading');
   try{
-    var token=await getToken();
-    gdriveUser=true;updateAuthButton();
+    // Pegar token do cache
+    var stored=sessionStorage.getItem('gd_token');
+    if(!stored) throw new Error('no_token');
+    var t=JSON.parse(stored);
+    if(t.expires<=Date.now()) throw new Error('token_expired');
+    var token=t.token;
+    gdriveUser=true; updateAuthButton();
     var fid=await findFileId(token);
-    if(!fid){
-      // Drive conectado mas sem arquivo — começa do zero
-      state={clients:{},order:[],months:{},monthOrder:[]};
-      setDriveStatus('idle');
-      renderAll();
-      return;
-    }
+    if(!fid){ setDriveStatus('idle'); renderAll(); return; }
     gdriveFileId=fid;
     var r=await apiFetch('GET','https://www.googleapis.com/drive/v3/files/'+fid+'?alt=media',null,token);
     var data=await r.json();
-    if(data&&data.months){
+    if(data&&data.months&&data.order&&data.order.length>0){
       state=data;
-      if(state.monthOrder&&state.monthOrder.length)activeMonth=state.monthOrder[0];
+      if(state.monthOrder&&state.monthOrder.length) activeMonth=state.monthOrder[0];
+      else activeMonth=null;
     }
     renderAll();
     setDriveStatus('saved');
     setTimeout(function(){setDriveStatus('idle');},3000);
   }catch(e){
-    console.error('Drive load',e);
-    setDriveStatus('error');
-    if(String(e).includes('401')||String(e).includes('403')){
-      gdriveUser=false;updateAuthButton();
+    console.error('Drive load error:',e);
+    setDriveStatus('idle');
+    if(String(e.message||e).includes('no_token')||String(e.message||e).includes('token_expired')){
+      // Sessão expirada — mostrar tela de login
+      gdriveUser=false; updateAuthButton();
+      showWaitScreen();
+      setTimeout(function(){
+        var wi=document.getElementById('wait-inner');
+        if(wi) wi.innerHTML='<p style="font-size:13px;color:var(--text2);text-align:center;margin-bottom:8px;">Sessão expirada.</p><button class="btn btn-primary" onclick="startLogin()">☁ Entrar com Google</button>';
+      },100);
+    } else {
+      // Outro erro — não sair da tela atual
+      showAlert('Erro ao carregar do Drive. Tente clicar em atualizar.','warn');
+      renderAll();
     }
-    // Mostrar botão de login se falhou
-    showWaitScreen();
-    setTimeout(function(){
-      var wi=document.getElementById('wait-inner');
-      if(wi) wi.innerHTML=
-        '<p style="font-size:13px;color:var(--text2);text-align:center;margin-bottom:4px;">Não foi possível conectar.<br>Clique para tentar novamente.</p>'
-        +'<button class="btn btn-primary" onclick="gdriveLogin()" style="margin-top:4px;">☁ Entrar com Google</button>';
-    },100);
   }
 }
 
