@@ -507,32 +507,32 @@ function showWaitScreen(){
 }
 
 async function atualizarDrive(){
-  // Atualizar sem mostrar tela de login — só busca do Drive se tiver token
   var stored=sessionStorage.getItem('gd_token');
   if(!stored){showAlert('Faça login primeiro.','warn');return;}
-  var t; try{t=JSON.parse(stored);}catch(e){showAlert('Sessão inválida. Faça login novamente.','warn');return;}
+  var t; try{t=JSON.parse(stored);}catch(e){showAlert('Sessão inválida.','warn');return;}
   if(t.expires<=Date.now()){showAlert('Sessão expirada. Faça login novamente.','warn');gdriveUser=false;updateAuthButton();return;}
   setDriveStatus('loading');
   try{
-    var fid=await findFileId(t.token);
-    if(!fid){showAlert('Nenhum dado encontrado no Drive.','warn');setDriveStatus('idle');return;}
+    var fid=gdriveFileId||await findFileId(t.token);
+    if(!fid){showAlert('Arquivo não encontrado no Drive.','warn');setDriveStatus('idle');return;}
     gdriveFileId=fid;
     var r=await apiFetch('GET','https://www.googleapis.com/drive/v3/files/'+fid+'?alt=media',null,t.token);
     var data=await r.json();
-    if(data&&data.months&&data.order&&data.order.length>0){
+    if(data&&data.months){
       state=data;
-      if(state.monthOrder&&state.monthOrder.length)activeMonth=state.monthOrder[0];
+      if(state.monthOrder&&state.monthOrder.length) activeMonth=state.monthOrder[0];
       else activeMonth=null;
       renderAll();
-      setDriveStatus('saved');setTimeout(function(){setDriveStatus('idle');},3000);
+      setDriveStatus('saved');
+      setTimeout(function(){setDriveStatus('idle');},3000);
     } else {
-      console.warn('atualizarDrive: Drive vazio, ignorando');
-      showAlert('Drive sem dados. Use o navegador com os dados para salvar primeiro.','warn');
+      showAlert('Não foi possível ler os dados do Drive.','warn');
       setDriveStatus('idle');
     }
   }catch(e){
     console.error('Atualizar erro:',e);
     setDriveStatus('error');
+    showAlert('Erro ao atualizar. Tente novamente.','warn');
   }
 }
 
