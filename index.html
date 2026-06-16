@@ -60,6 +60,7 @@ header{background:#111110;padding:0 2rem;display:flex;align-items:center;height:
 /* Métricas */
 .metric{background:var(--bg);border-radius:var(--radius);padding:10px 14px;border:0.5px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,0.04);transition:box-shadow .15s,transform .15s;animation:fadeInUp .3s ease both;}
 .metric:hover{box-shadow:0 4px 12px rgba(0,0,0,0.08);transform:translateY(-1px);}
+.metric-active{outline:2px solid var(--yellow);outline-offset:-2px;}
 .metric .lbl{font-size:11px;color:var(--text2);margin-bottom:3px;font-weight:500;letter-spacing:.02em;}
 .metric .val{font-size:22px;font-weight:600;}
 
@@ -69,7 +70,7 @@ header{background:#111110;padding:0 2rem;display:flex;align-items:center;height:
 
 
 @keyframes fadeInUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
-.animate-metrics .metric{animation:fadeInUp .3s ease both;}
+.do-animate .metric{animation:fadeInUp .3s ease both;}
 
 /* Progresso */
 .progress-wrap{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:1rem;}
@@ -171,7 +172,7 @@ input[type="date"]:focus{border-color:var(--info-text);background:var(--bg);outl
   </div>
   <div class="header-actions">
     <span id="drive-status"></span>
-    <button class="hbtn" id="btn-reload" onclick="gdriveLoad()" title="Recarregar dados do Drive">↺ recarregar</button>
+    <button class="hbtn" id="btn-reload" onclick="gdriveLoad()" title="Recarregar dados do Drive">atualizar</button>
     <button class="hbtn" id="btn-backup" onclick="forceSave()" title="Salvar no Drive">salvar</button>
     <button class="hbtn" id="btn-drive" onclick="gdriveLogin()">☁ Entrar com Google</button>
   </div>
@@ -308,6 +309,8 @@ var activeClientFilter = 'todos';
 var activePrazoFilter = 'todos';
 var sortField = 'prazo'; var sortDir = 1;
 var pendingImport = null;
+var viewMode = 'videos'; // 'videos' ou 'gravacoes'
+var gravacaoFilter = 'todos'; // 'todos','realizada','agendada','pendente'
 var obsEditingId = null;
 var todayISO = new Date().toISOString().slice(0,10);
 var COLORS = ['#6c8ebf','#82b366','#d79b00','#ae4132','#7b68a6','#0e7490','#b45309','#166534','#9d174d','#1d4ed8'];
@@ -364,12 +367,25 @@ function gdriveLogout(){
 
 async function getToken(){
   return new Promise(function(resolve,reject){
+    // Usar token em cache se ainda válido
     var stored=sessionStorage.getItem('gd_token');
-    if(stored){var t=JSON.parse(stored);if(t.expires>Date.now()){resolve(t.token);return;}}
+    if(stored){
+      try{
+        var t=JSON.parse(stored);
+        if(t.expires>Date.now()+60000){resolve(t.token);return;} // 1min de margem
+      }catch(e){}
+    }
     if(!gdriveTokenClient){reject('no client');return;}
     gdriveTokenClient.callback=function(resp){
-      if(resp.error){reject(resp.error);return;}
+      if(resp.error){
+        // Se falhou silencioso, marcar como deslogado
+        if(resp.error==='access_denied'||resp.error==='immediate_failed'){
+          gdriveUser=false;updateAuthButton();
+        }
+        reject(resp.error);return;
+      }
       sessionStorage.setItem('gd_token',JSON.stringify({token:resp.access_token,expires:Date.now()+3500000}));
+      gdriveUser=true;updateAuthButton();
       resolve(resp.access_token);
     };
     gdriveTokenClient.requestAccessToken({prompt:''});
@@ -413,12 +429,12 @@ async function gdriveSave(){
 }
 
 async function gdriveLoad(){
-  if(!gdriveUser){showAlert('Faça login com o Google primeiro.','warn');return;}
   setDriveStatus('loading');
   try{
     var token=await getToken();
+    gdriveUser=true;updateAuthButton();
     var fid=await findFileId(token);
-    if(!fid){setDriveStatus('idle');showAlert('Nenhum dado encontrado no Drive.','warn');return;}
+    if(!fid){setDriveStatus('idle');return;} // arquivo ainda não existe, ok
     gdriveFileId=fid;
     var r=await apiFetch('GET','https://www.googleapis.com/drive/v3/files/'+fid+'?alt=media',null,token);
     var data=await r.json();
@@ -429,7 +445,15 @@ async function gdriveLoad(){
       renderAll();
     }
     setDriveStatus('saved');setTimeout(function(){setDriveStatus('idle');},3000);
-  }catch(e){console.error('Drive load',e);setDriveStatus('error');}
+  }catch(e){
+    console.error('Drive load',e);
+    setDriveStatus('error');
+    // Se erro de auth, pedir login
+    if(String(e).includes('401')||String(e).includes('403')){
+      gdriveUser=false;updateAuthButton();
+      showAlert('Sessão expirada. Faça login novamente.','warn');
+    }
+  }
 }
 
 // ---- GSI init ----
@@ -441,15 +465,16 @@ var _gsiCheck=setInterval(function(){
       scope:'https://www.googleapis.com/auth/drive.appdata',
       callback:function(resp){
         if(resp.error){setDriveStatus('error');return;}
+        // Salvar token com expiração
+        sessionStorage.setItem('gd_token',JSON.stringify({token:resp.access_token,expires:Date.now()+3500000}));
         gdriveUser=true;
         updateAuthButton();
         gdriveLoad();
       }
     });
     updateAuthButton();
-    // auto login se tiver token em cache
-    var stored=sessionStorage.getItem('gd_token');
-    if(stored){var t=JSON.parse(stored);if(t.expires>Date.now()){gdriveUser=true;updateAuthButton();gdriveLoad();}}
+    // Tentar auto-login silencioso (sem popup)
+    gdriveTokenClient.requestAccessToken({prompt:''});
   }
 },300);
 
@@ -593,25 +618,25 @@ function renderMonthView(){
   var html='<div class="container">';
 
   // Métricas
-  html+='<div style="margin-bottom:1rem;">'
-    // Bloco Gravações
-    +'<p style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Gravações</p>'
-    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:12px;">'
-    +'<div class="metric metric-neutral"><p class="lbl">Total</p><p class="val">'+gravTotal+'</p></div>'
-    +'<div class="metric metric-ok"><p class="lbl">Realizadas</p><p class="val" style="color:var(--success-text)">'+gravReal+'</p></div>'
-    +'<div class="metric metric-today"><p class="lbl">Agendadas</p><p class="val" style="color:var(--info-text)">'+gravAgend+'</p></div>'
-    +'<div class="metric metric-warn"><p class="lbl">Pendentes</p><p class="val" style="color:var(--warn-text)">'+gravPend+'</p></div>'
-    +'</div>'
-    // Bloco Vídeos
-    +'<p style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Vídeos</p>'
-    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;">'
-    +'<div class="metric metric-neutral"><p class="lbl">Total</p><p class="val">'+total+'</p></div>'
-    +'<div class="metric metric-late"><p class="lbl">Atrasados</p><p class="val" style="color:var(--danger-text)">'+late+'</p></div>'
-    +'<div class="metric metric-today"><p class="lbl">Hoje</p><p class="val" style="color:var(--info-text)">'+today+'</p></div>'
-    +'<div class="metric metric-ok"><p class="lbl">No prazo</p><p class="val" style="color:var(--success-text)">'+ok+'</p></div>'
-    +'<div class="metric metric-done"><p class="lbl">Concluídos</p><p class="val" style="color:#1a4fa3">'+done+'</p></div>'
-    +'</div>'
-    +'</div>';
+  html+='<div style="margin-bottom:1rem;" id="metrics-block">';
+  // Gravações
+  html+='<p style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Gravações</p>';
+  html+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:12px;">';
+  html+='<div class="metric metric-neutral'+(viewMode==="gravacoes"&&gravacaoFilter==="todos"?' metric-active':'')+' mcard" data-mode="gravacoes" data-filter="todos" style="cursor:pointer;"><p class="lbl">Total</p><p class="val">'+gravTotal+'</p></div>';
+  html+='<div class="metric metric-ok'+(viewMode==="gravacoes"&&gravacaoFilter==="realizada"?' metric-active':'')+' mcard" data-mode="gravacoes" data-filter="realizada" style="cursor:pointer;"><p class="lbl">Realizadas</p><p class="val" style="color:var(--success-text)">'+gravReal+'</p></div>';
+  html+='<div class="metric metric-today'+(viewMode==="gravacoes"&&gravacaoFilter==="agendada"?' metric-active':'')+' mcard" data-mode="gravacoes" data-filter="agendada" style="cursor:pointer;"><p class="lbl">Agendadas</p><p class="val" style="color:var(--info-text)">'+gravAgend+'</p></div>';
+  html+='<div class="metric metric-warn'+(viewMode==="gravacoes"&&gravacaoFilter==="pendente"?' metric-active':'')+' mcard" data-mode="gravacoes" data-filter="pendente" style="cursor:pointer;"><p class="lbl">Pendentes</p><p class="val" style="color:var(--warn-text)">'+gravPend+'</p></div>';
+  html+='</div>';
+  // Vídeos
+  html+='<p style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Vídeos</p>';
+  html+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;">';
+  html+='<div class="metric metric-neutral'+(viewMode==="videos"&&activePrazoFilter==="todos"?' metric-active':'')+' mcard" data-mode="videos" data-filter="todos" style="cursor:pointer;"><p class="lbl">Total</p><p class="val">'+total+'</p></div>';
+  html+='<div class="metric metric-late'+(viewMode==="videos"&&activePrazoFilter==="atrasado"?' metric-active':'')+' mcard" data-mode="videos" data-filter="atrasado" style="cursor:pointer;"><p class="lbl">Atrasados</p><p class="val" style="color:var(--danger-text)">'+late+'</p></div>';
+  html+='<div class="metric metric-today'+(viewMode==="videos"&&activePrazoFilter==="hoje"?' metric-active':'')+' mcard" data-mode="videos" data-filter="hoje" style="cursor:pointer;"><p class="lbl">Hoje</p><p class="val" style="color:var(--info-text)">'+today+'</p></div>';
+  html+='<div class="metric metric-ok'+(viewMode==="videos"&&activePrazoFilter==="ok"?' metric-active':'')+' mcard" data-mode="videos" data-filter="ok" style="cursor:pointer;"><p class="lbl">No prazo</p><p class="val" style="color:var(--success-text)">'+ok+'</p></div>';
+  html+='<div class="metric metric-done'+(viewMode==="videos"&&activePrazoFilter==="concluido"?' metric-active':'')+' mcard" data-mode="videos" data-filter="concluido" style="cursor:pointer;"><p class="lbl">Concluídos</p><p class="val" style="color:#1a4fa3">'+done+'</p></div>';
+  html+='</div>';
+  html+='</div>';
 
   // Progresso do mês
   html+='<div class="progress-wrap">'
@@ -653,16 +678,10 @@ function renderMonthView(){
   html+='</div></div>';
 
   // Tabela
-  html+='<div class="card"><div style="overflow-x:auto;"><table class="dem-table"><thead><tr>'
-    +'<th onclick="doSort(\'escopo\')" style="min-width:80px;">Escopo <span id="sort-escopo"></span></th>'
-    +'<th onclick="doSort(\'situacao\')" style="min-width:110px;">Situação <span id="sort-situacao"></span></th>'
-    +'<th onclick="doSort(\'prazo\')" style="min-width:120px;">1ª entrega <span id="sort-prazo"></span></th>'
-    +'<th onclick="doSort(\'publicacao\')" style="min-width:120px;">Publicação <span id="sort-publicacao"></span></th>'
-    +'<th onclick="doSort(\'roteiro\')" style="min-width:110px;">Roteiro <span id="sort-roteiro"></span></th>'
-    +'<th style="min-width:80px;">Chave</th>'
-    +'<th onclick="doSort(\'status\')" style="min-width:90px;">Status <span id="sort-status"></span></th>'
-    +'<th style="width:36px;"></th>'
-    +'</tr></thead><tbody id="tbody"></tbody></table></div>'
+  var tableHtml = viewMode === 'gravacoes'
+    ? '<th style="min-width:120px;">Cliente</th><th onclick="doSort(\'data\')" style="min-width:120px;">Data <span id="sort-data"></span></th><th style="min-width:110px;">Status</th><th style="width:36px;"></th>'
+    : '<th onclick="doSort(\'escopo\')" style="min-width:80px;">Escopo <span id="sort-escopo"></span></th><th onclick="doSort(\'situacao\')" style="min-width:110px;">Situação <span id="sort-situacao"></span></th><th onclick="doSort(\'prazo\')" style="min-width:120px;">1ª entrega <span id="sort-prazo"></span></th><th onclick="doSort(\'publicacao\')" style="min-width:120px;">Publicação <span id="sort-publicacao"></span></th><th onclick="doSort(\'roteiro\')" style="min-width:110px;">Roteiro <span id="sort-roteiro"></span></th><th style="min-width:80px;">Chave</th><th onclick="doSort(\'status\')" style="min-width:90px;">Status <span id="sort-status"></span></th><th style="width:36px;"></th>';
+  html+='<div class="card"><div style="overflow-x:auto;"><table class="dem-table"><thead><tr>'+tableHtml+'</tr></thead><tbody id="tbody"></tbody></table></div>'
     +'<div id="empty-msg" style="display:none;text-align:center;padding:2.5rem;font-size:13px;color:var(--text2);">Nenhuma demanda encontrada.</div>'
     +'</div>'
     +'<p class="row-count" id="row-count"></p>';
@@ -672,7 +691,11 @@ function renderMonthView(){
   html+='</div>'; // fim container
   view.innerHTML=html;
 
-  renderTableRows(visD);
+  if(viewMode === 'gravacoes'){
+    renderGravTable();
+  } else {
+    renderTableRows(visD);
+  }
   bindFileInput();
   updateSortIcons();
   // Animar barra de progresso
@@ -680,11 +703,9 @@ function renderMonthView(){
     var bar=document.getElementById('prog-bar');
     if(bar) bar.style.width=pct+'%';
   }, 60);
-  // Remover classe de animação após rodar uma vez
-  setTimeout(function(){
-    var mb=document.getElementById('metrics-block');
-    if(mb) mb.classList.remove('animate-metrics');
-  }, 400);
+  // Animar métricas só ao chamar renderMonthView (troca de mês/reload)
+  var mb=document.getElementById('metrics-block');
+  if(mb){ mb.classList.add('do-animate'); setTimeout(function(){ mb.classList.remove('do-animate'); },400); }
 }
 
 function filterByClient(demands){
@@ -764,6 +785,15 @@ document.addEventListener('blur',function(e){
 
 document.addEventListener('change',function(e){
   var el=e.target;
+  // Gravação status inline
+  if(el.dataset.gravIdx!==undefined&&el.dataset.gravIdx!==''){
+    var idx=parseInt(el.dataset.gravIdx);
+    if(state.months[activeMonth]&&state.months[activeMonth].gravacoes[idx]){
+      state.months[activeMonth].gravacoes[idx].status=el.value;
+      save();renderMonthView();
+    }
+    return;
+  }
   if(!el.dataset.id||!el.dataset.field)return;
   var d=findDemand(el.dataset.id);
   if(d){
@@ -773,12 +803,67 @@ document.addEventListener('change',function(e){
 });
 
 document.addEventListener('click',function(e){
+  // Clique nos cards de métrica
+  var card=e.target.closest('.mcard');
+  if(card){
+    setViewMode(card.dataset.mode, card.dataset.filter);
+    return;
+  }
+  // Deletar gravação no tbody
+  var btnGrav=e.target.closest('[data-del-grav]');
+  if(btnGrav&&activeMonth){
+    if(!confirm('Excluir esta gravação?'))return;
+    var idx=parseInt(btnGrav.dataset.delGrav);
+    state.months[activeMonth].gravacoes.splice(idx,1);
+    save();renderMonthView();return;
+  }
   var btn=e.target.closest('[data-del]');
   if(!btn||!activeMonth)return;
   if(!confirm('Excluir esta demanda?'))return;
   state.months[activeMonth].demands=state.months[activeMonth].demands.filter(function(r){return r.id!==btn.dataset.del;});
   save();renderAll();
 });
+
+function renderGravTable(){
+  var tbody=document.getElementById('tbody');
+  var empty=document.getElementById('empty-msg');
+  var rc=document.getElementById('row-count');
+  if(!tbody)return;
+  var gravs=monthGravacoes().filter(function(g){
+    if(activeClientFilter!=='todos'&&g.clientId!==activeClientFilter)return false;
+    if(gravacaoFilter!=='todos'&&g.status.toLowerCase()!==gravacaoFilter)return false;
+    return g.status!=='Não incluso'||gravacaoFilter==='todos';
+  });
+  gravs.sort(function(a,b){return(a.data||'').localeCompare(b.data||'');});
+  tbody.innerHTML='';
+  if(!gravs.length){if(empty)empty.style.display='';if(rc)rc.textContent='';return;}
+  if(empty)empty.style.display='none';
+  gravs.forEach(function(g,i){
+    var stCls=g.status==='Realizada'?'rec-realizada':g.status==='Agendada'?'rec-agendada':g.status==='Não incluso'?'rec-nao-incluso':'rec-pendente';
+    var opts=['Agendada','Pendente','Realizada','Não incluso'].map(function(o){
+      return'<option value="'+o+'"'+(g.status===o?' selected':'')+'>'+o+'</option>';
+    }).join('');
+    var idx=monthGravacoes().indexOf(g);
+    var tr=document.createElement('tr');
+    tr.innerHTML=
+      '<td><span style="display:inline-flex;align-items:center;"><span class="client-dot" style="background:'+clientColor(g.clientId)+'"></span><span style="font-size:12px;">'+esc(clientName(g.clientId))+'</span></span></td>'+
+      '<td><input type="date" value="'+(g.data||'')+'" data-grav-date="'+idx+'" style="font-size:12px;border:0.5px solid transparent;border-radius:4px;background:transparent;color:var(--text);cursor:pointer;font-family:inherit;padding:2px 4px;"></td>'+
+      '<td><select class="inline-select" data-grav-idx="'+idx+'">'+opts+'</select></td>'+
+      '<td><button class="btn btn-danger" style="padding:2px 7px;font-size:11px;border-radius:4px;" data-del-grav="'+idx+'">✕</button></td>';
+    tbody.appendChild(tr);
+  });
+  if(rc)rc.textContent=gravs.length+' gravação'+(gravs.length!==1?'ões':'');
+
+  // Eventos inline para data de gravação
+  tbody.querySelectorAll('[data-grav-date]').forEach(function(el){
+    el.addEventListener('change',function(){
+      var idx=parseInt(el.dataset.gravDate);
+      if(!state.months[activeMonth])return;
+      state.months[activeMonth].gravacoes[idx].data=el.value;
+      save();
+    });
+  });
+}
 
 function findDemand(id){
   if(!activeMonth||!state.months[activeMonth])return null;
@@ -857,6 +942,29 @@ document.getElementById('gravacoes-list').addEventListener('click',function(e){
 });
 
 // ---- Filtros ----
+function setViewMode(mode, filter){
+  viewMode = mode;
+  if(mode === 'videos'){
+    activePrazoFilter = filter;
+    gravacaoFilter = 'todos';
+  } else {
+    gravacaoFilter = filter;
+    activePrazoFilter = 'todos';
+  }
+  // Atualizar cards ativos sem recriar métricas
+  document.querySelectorAll('.mcard').forEach(function(c){
+    var isActive = c.dataset.mode === mode && c.dataset.filter === filter;
+    c.classList.toggle('metric-active', isActive);
+  });
+  // Só atualizar tabela
+  if(viewMode === 'gravacoes'){
+    renderGravTable();
+  } else {
+    renderTableRows(visibleDemands(monthDemands()));
+  }
+  updateSortIcons();
+}
+
 function setClientFilter(val){
   activeClientFilter=val;
   // Atualizar chips ativos sem recriar tudo
