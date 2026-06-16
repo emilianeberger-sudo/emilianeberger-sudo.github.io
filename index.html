@@ -318,10 +318,11 @@ var MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','
 
 // ---- Storage ----
 function save(){
-  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(e){}
   if(gdriveUser) gdriveSaveDebounced();
+  // localStorage só como cache de emergência, nunca como fonte primária
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(e){}
 }
-function load(){try{var s=localStorage.getItem(STORAGE_KEY);if(s)state=JSON.parse(s);}catch(e){}}
+function load(){} // desabilitado — fonte de dados é sempre o Drive
 
 // ---- Salvar manualmente no Drive ----
 async function forceSave(){
@@ -428,31 +429,81 @@ async function gdriveSave(){
   gdriveSyncing=false;
 }
 
+function startLogin(){
+  var wi=document.getElementById('wait-inner');
+  if(wi) wi.innerHTML=
+    '<div style="width:24px;height:24px;border:2.5px solid var(--border2);border-top-color:var(--yellow);border-radius:50%;animation:spin .8s linear infinite;"></div>'
+    +'<p style="font-size:12px;color:var(--text3);">Conectando...</p>';
+  gdriveLogin();
+}
+
+function showWaitScreen(){
+  if(!document.getElementById('spin-style')){
+    var st=document.createElement('style');
+    st.id='spin-style';
+    st.textContent='@keyframes spin{to{transform:rotate(360deg);}} @keyframes fadeIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}';
+    document.head.appendChild(st);
+  }
+  document.getElementById('month-view').innerHTML=
+    '<div style="min-height:80vh;display:flex;align-items:center;justify-content:center;padding:2rem;">'
+    +'<div style="background:var(--bg);border:0.5px solid var(--border);border-radius:20px;padding:3rem 3.5rem;display:flex;flex-direction:column;align-items:center;gap:24px;max-width:380px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.08);animation:fadeIn .4s ease both;">'
+    // Logo
+    +'<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">'
+    +'<div style="font-size:28px;font-weight:700;letter-spacing:-0.5px;color:var(--text);">resultate<span style="display:inline-block;width:8px;height:8px;background:#f5c400;border-radius:1px;margin-left:2px;margin-bottom:2px;vertical-align:baseline;"></span></div>'
+    +'</div>'
+    // Divider
+    +'<div style="width:40px;height:1.5px;background:var(--border2);border-radius:99px;"></div>'
+    // Bem-vindo
+    +'<div style="text-align:center;">'
+    +'<p style="font-size:20px;font-weight:600;color:var(--text);margin-bottom:6px;">Olá, Emiliane</p>'
+    +'<p style="font-size:13px;color:var(--text2);line-height:1.5;">Painel de acompanhamento audiovisual.<br>Faça login para acessar seus dados.</p>'
+    +'</div>'
+    // Botão de login
+    +'<div id="wait-inner" style="display:flex;flex-direction:column;align-items:center;gap:10px;">'
+    +'<button class="btn btn-primary" onclick="startLogin()" style="padding:8px 24px;font-size:13px;border-radius:99px;">☁ Entrar com Google</button>'
+    +'</div>'
+    +'</div>'
+    +'</div>';
+}
+
 async function gdriveLoad(){
+  showWaitScreen();
   setDriveStatus('loading');
   try{
     var token=await getToken();
     gdriveUser=true;updateAuthButton();
     var fid=await findFileId(token);
-    if(!fid){setDriveStatus('idle');return;} // arquivo ainda não existe, ok
+    if(!fid){
+      // Drive conectado mas sem arquivo — começa do zero
+      state={clients:{},order:[],months:{},monthOrder:[]};
+      setDriveStatus('idle');
+      renderAll();
+      return;
+    }
     gdriveFileId=fid;
     var r=await apiFetch('GET','https://www.googleapis.com/drive/v3/files/'+fid+'?alt=media',null,token);
     var data=await r.json();
     if(data&&data.months){
       state=data;
-      localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
       if(state.monthOrder&&state.monthOrder.length)activeMonth=state.monthOrder[0];
-      renderAll();
     }
-    setDriveStatus('saved');setTimeout(function(){setDriveStatus('idle');},3000);
+    renderAll();
+    setDriveStatus('saved');
+    setTimeout(function(){setDriveStatus('idle');},3000);
   }catch(e){
     console.error('Drive load',e);
     setDriveStatus('error');
-    // Se erro de auth, pedir login
     if(String(e).includes('401')||String(e).includes('403')){
       gdriveUser=false;updateAuthButton();
-      showAlert('Sessão expirada. Faça login novamente.','warn');
     }
+    // Mostrar botão de login se falhou
+    showWaitScreen();
+    setTimeout(function(){
+      var wi=document.getElementById('wait-inner');
+      if(wi) wi.innerHTML=
+        '<p style="font-size:13px;color:var(--text2);text-align:center;margin-bottom:4px;">Não foi possível conectar.<br>Clique para tentar novamente.</p>'
+        +'<button class="btn btn-primary" onclick="gdriveLogin()" style="margin-top:4px;">☁ Entrar com Google</button>';
+    },100);
   }
 }
 
@@ -1145,9 +1196,8 @@ document.querySelectorAll('.modal-overlay').forEach(function(o){
 });
 
 // ---- Init ----
-load();
-if(state.monthOrder.length)activeMonth=state.monthOrder[0];
-renderAll();
+// Mostrar tela de espera — só exibe dados após Drive carregar
+showWaitScreen();
 </script>
 </body>
 </html>
