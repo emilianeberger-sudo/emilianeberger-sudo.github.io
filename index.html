@@ -69,6 +69,7 @@ header{background:#111110;padding:0 2rem;display:flex;align-items:center;height:
 
 
 @keyframes fadeInUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.animate-metrics .metric{animation:fadeInUp .3s ease both;}
 
 /* Progresso */
 .progress-wrap{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:1rem;}
@@ -679,6 +680,11 @@ function renderMonthView(){
     var bar=document.getElementById('prog-bar');
     if(bar) bar.style.width=pct+'%';
   }, 60);
+  // Remover classe de animação após rodar uma vez
+  setTimeout(function(){
+    var mb=document.getElementById('metrics-block');
+    if(mb) mb.classList.remove('animate-metrics');
+  }, 400);
 }
 
 function filterByClient(demands){
@@ -851,8 +857,22 @@ document.getElementById('gravacoes-list').addEventListener('click',function(e){
 });
 
 // ---- Filtros ----
-function setClientFilter(val){activeClientFilter=val;renderAll();}
-function setPrazoFilter(val){activePrazoFilter=val;renderAll();}
+function setClientFilter(val){
+  activeClientFilter=val;
+  // Atualizar chips ativos sem recriar tudo
+  document.querySelectorAll('#client-chips button').forEach(function(b){
+    b.classList.toggle('active', b.getAttribute('onclick').includes("'"+val+"'") || (val==='todos' && b.getAttribute('onclick').includes("'todos'")));
+  });
+  renderTableRows(visibleDemands(monthDemands()));
+}
+function setPrazoFilter(val){
+  activePrazoFilter=val;
+  document.querySelectorAll('[onclick^="setPrazoFilter"]').forEach(function(b){
+    var bval=b.getAttribute('onclick').replace("setPrazoFilter('","").replace("')","");
+    b.classList.toggle('active', bval===val);
+  });
+  renderTableRows(visibleDemands(monthDemands()));
+}
 function doSort(f){if(sortField===f)sortDir*=-1;else{sortField=f;sortDir=1;}renderTableRows(visibleDemands(monthDemands()));}
 
 // ---- Meses ----
