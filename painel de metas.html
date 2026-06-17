@@ -345,7 +345,7 @@ function showError(msg) {
     '</div>';
 }
 
-fetch('https://www.googleapis.com/drive/v3/files/' + GDRIVE_FILE_ID + '?alt=media')
+fetch('https://www.googleapis.com/drive/v3/files/' + GDRIVE_FILE_ID + '?alt=media&key=AIzaSyD15oXBQDAXNIvi1uejAscwxYqc5NP6hkw')
   .then(function (r) {
     if (!r.ok) throw new Error('status ' + r.status);
     return r.json();
