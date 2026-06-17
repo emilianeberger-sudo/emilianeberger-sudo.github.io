@@ -174,6 +174,7 @@ input[type="date"]:focus{border-color:var(--info-text);background:var(--bg);outl
     <span id="drive-status"></span>
     <button class="hbtn" id="btn-reload" onclick="atualizarDrive()" title="Recarregar dados do Drive">atualizar</button>
     <button class="hbtn" id="btn-backup" onclick="forceSave()" title="Salvar no Drive">salvar</button>
+    
     <button class="hbtn" id="btn-drive" onclick="gdriveLogin()">☁ Entrar com Google</button>
   </div>
 </header>
@@ -328,8 +329,19 @@ function save(){
 function load(){} // desabilitado — fonte de dados é sempre o Drive
 
 // ---- Salvar manualmente no Drive ----
-async function forceSave(){
-  if(!gdriveUser){showAlert('Faça login com o Google primeiro.','warn');return;}
+function copyFileId(){
+  if(!gdriveFileId){
+    showAlert('Salve os dados primeiro para gerar o arquivo no Drive.','warn');
+    return;
+  }
+  navigator.clipboard.writeText(gdriveFileId).then(function(){
+    showAlert('ID copiado: '+gdriveFileId+' — cole no painel da equipe.','info');
+  }).catch(function(){
+    alert('ID do arquivo: '+gdriveFileId);
+  });
+}
+
+async function forceSave(){  if(!gdriveUser){showAlert('Faça login com o Google primeiro.','warn');return;}
   var local = null;
   try{ local = JSON.parse(localStorage.getItem(STORAGE_KEY)); }catch(e){}
   if(local && local.order && local.order.length > 0) state = local;
@@ -340,25 +352,46 @@ async function forceSave(){
   if(t.expires <= Date.now()){showAlert('Sessão expirada. Faça login novamente.','warn');return;}
   var token = t.token;
   var fid = gdriveFileId || await findFileId(token);
-  if(!fid){showAlert('Arquivo não encontrado no Drive.','warn');return;}
-  gdriveFileId = fid;
   setDriveStatus('saving');
   try{
-    // Usar fetch diretamente com string JSON — método que funciona
     var body = JSON.stringify(state);
-    var r = await fetch('https://www.googleapis.com/upload/drive/v3/files/'+fid+'?uploadType=media',{
-      method:'PATCH',
-      headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
-      body: body
-    });
-    var result = await r.json();
-    if(result.id){
-      console.log('forceSave OK — tamanho:', body.length);
-      setDriveStatus('saved');
-      setTimeout(function(){setDriveStatus('idle');},3000);
+    if(!fid){
+      // Criar arquivo novo na pasta normal (visível) do Drive
+      var meta = JSON.stringify({name:GDRIVE_FILE_NAME});
+      var form = new FormData();
+      form.append('metadata', new Blob([meta],{type:'application/json'}));
+      form.append('file', new Blob([body],{type:'application/json'}));
+      var rc = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',{
+        method:'POST',
+        headers:{'Authorization':'Bearer '+token},
+        body: form
+      });
+      var dc = await rc.json();
+      if(!dc.id) throw new Error(JSON.stringify(dc));
+      fid = dc.id;
+      gdriveFileId = fid;
+      console.log('Arquivo criado no Drive:', fid);
     } else {
-      throw new Error(JSON.stringify(result));
+      gdriveFileId = fid;
+      var r = await fetch('https://www.googleapis.com/upload/drive/v3/files/'+fid+'?uploadType=media',{
+        method:'PATCH',
+        headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+        body: body
+      });
+      var result = await r.json();
+      if(!result.id) throw new Error(JSON.stringify(result));
     }
+    console.log('forceSave OK — tamanho:', body.length, '— fileId:', fid);
+    // Garantir que o arquivo é público para leitura (para o painel da colaboradora)
+    try{
+      await fetch('https://www.googleapis.com/drive/v3/files/'+fid+'/permissions',{
+        method:'POST',
+        headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+        body: JSON.stringify({role:'reader', type:'anyone'})
+      });
+    }catch(permErr){ console.warn('Erro ao definir permissão pública:', permErr); }
+    setDriveStatus('saved');
+    setTimeout(function(){setDriveStatus('idle');},3000);
   }catch(e){
     console.error('forceSave erro:',e);
     setDriveStatus('error');
@@ -447,7 +480,7 @@ async function apiFetch(method,url,body,token){
 }
 
 async function findFileId(token){
-  var r=await apiFetch('GET',"https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D'"+GDRIVE_FILE_NAME+"'&fields=files(id)",null,token);
+  var r=await apiFetch('GET',"https://www.googleapis.com/drive/v3/files?q=name%3D'"+GDRIVE_FILE_NAME+"'+and+trashed%3Dfalse&fields=files(id,name)",null,token);
   var d=await r.json();
   return d.files&&d.files.length?d.files[0].id:null;
 }
@@ -474,7 +507,7 @@ async function gdriveSave(){
     if(gdriveFileId){
       await apiFetch('PATCH','https://www.googleapis.com/upload/drive/v3/files/'+gdriveFileId+'?uploadType=media',blob,token);
     } else {
-      var meta=JSON.stringify({name:GDRIVE_FILE_NAME,parents:['appDataFolder']});
+      var meta=JSON.stringify({name:GDRIVE_FILE_NAME});
       var form=new FormData();
       form.append('metadata',new Blob([meta],{type:'application/json'}));
       form.append('file',blob);
@@ -610,7 +643,7 @@ var _gsiCheck=setInterval(function(){
     clearInterval(_gsiCheck);
     gdriveTokenClient=google.accounts.oauth2.initTokenClient({
       client_id:GDRIVE_CLIENT_ID,
-      scope:'https://www.googleapis.com/auth/drive.appdata',
+      scope:'https://www.googleapis.com/auth/drive.file',
       callback:function(resp){
         if(resp.error){setDriveStatus('error');return;}
         // Salvar token com expiração
