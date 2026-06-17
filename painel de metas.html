@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Metas — Audiovisual Resultate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#111110;
+  --bg-card:#1c1c1a;
+  --yellow:#f5c400;
+  --yellow-soft:#fde9a8;
+  --text:#f5f3ee;
+  --text2:#a8a59c;
+  --text3:#6e6b63;
+  --green:#7ed957;
+  --red:#ff6b6b;
+  --blue:#5ab4f0;
+}
+body{
+  font-family:'Inter',sans-serif;
+  background:radial-gradient(circle at 50% -10%, #1f1f1c 0%, #111110 55%);
+  color:var(--text);
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:2.5rem 1.25rem 3rem;
+  overflow-x:hidden;
+}
+
+.confetti{position:fixed;top:-20px;border-radius:2px;opacity:0;pointer-events:none;z-index:5;}
+@keyframes fall{
+  0%{transform:translateY(-20px) rotate(0deg);opacity:0;}
+  10%{opacity:1;}
+  100%{transform:translateY(110vh) rotate(360deg);opacity:0;}
+}
+
+header{display:flex;flex-direction:column;align-items:center;gap:4px;margin-bottom:1.75rem;z-index:1;}
+.logo{font-size:22px;font-weight:800;letter-spacing:-0.5px;color:var(--text);}
+.logo .dot{display:inline-block;width:7px;height:7px;background:var(--yellow);border-radius:1px;margin-left:1px;margin-bottom:3px;}
+.eyebrow{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.12em;font-weight:600;margin-top:2px;}
+
+.hero{
+  position:relative;
+  width:100%;
+  max-width:440px;
+  background:var(--bg-card);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:28px;
+  padding:2.25rem 2rem 2.25rem;
+  text-align:center;
+  z-index:1;
+  box-shadow:0 24px 60px rgba(0,0,0,0.45);
+}
+
+.greeting{font-size:14px;color:var(--text2);margin-bottom:1.25rem;}
+.greeting strong{color:var(--text);}
+
+.count-row{display:flex;align-items:baseline;justify-content:center;gap:6px;margin-bottom:1.5rem;}
+.count-done{font-size:34px;font-weight:800;color:var(--yellow);}
+.count-sep{font-size:20px;color:var(--text3);}
+.count-total{font-size:19px;font-weight:600;color:var(--text2);}
+.count-suffix{font-size:13px;color:var(--text3);margin-left:4px;}
+
+.track-wrap{position:relative;margin:0 4px 8px;padding-top:14px;}
+.track{background:rgba(255,255,255,0.07);border-radius:99px;height:16px;overflow:hidden;position:relative;}
+.fill{height:100%;border-radius:99px;background:var(--yellow);transition:width 1.4s cubic-bezier(.4,0,.2,1), background 0.6s ease;}
+.marker{position:absolute;top:0;width:2px;height:16px;background:rgba(0,0,0,0.25);z-index:1;}
+.ticks{display:flex;justify-content:space-between;margin-top:10px;padding:0 2px;}
+.tick{display:flex;flex-direction:column;align-items:center;gap:6px;width:25%;opacity:0.32;transition:opacity .5s ease;}
+.tick.on{opacity:1;}
+.tick i{font-size:24px;color:var(--text3);transition:color .5s ease, transform .5s ease;}
+.tick.on i{color:var(--yellow);transform:scale(1.18);}
+.tick .tl{font-size:10px;color:var(--text3);font-weight:600;transition:color .5s ease;}
+.tick.on .tl{color:var(--text2);}
+
+.message-box{
+  background:rgba(245,196,0,0.08);
+  border:1px solid rgba(245,196,0,0.18);
+  border-radius:14px;
+  padding:13px 16px;
+  font-size:14px;
+  font-weight:600;
+  color:var(--yellow-soft);
+  line-height:1.4;
+  margin-top:1.5rem;
+  margin-bottom:1.4rem;
+}
+
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1.5rem;}
+.stat{background:rgba(255,255,255,0.03);border-radius:12px;padding:10px 6px;}
+.stat .n{font-size:18px;font-weight:700;}
+.stat .l{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-top:3px;}
+.stat-late .n{color:var(--red);}
+.stat-today .n{color:var(--blue);}
+.stat-ok .n{color:var(--green);}
+
+.tip-divider{width:32px;height:1px;background:rgba(255,255,255,0.1);margin:0 auto 1rem;}
+.tip-label{font-size:10px;color:#5a5852;text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin-bottom:8px;}
+.tip-box{min-height:46px;display:flex;align-items:center;justify-content:center;padding:0 8px;}
+.tip-text{font-size:13px;color:var(--text2);line-height:1.5;}
+.tip-icon{color:var(--yellow);margin-right:6px;}
+
+.loading-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;padding:3rem 0;}
+.spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,0.1);border-top-color:var(--yellow);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+footer{margin-top:2rem;font-size:11px;color:var(--text3);text-align:center;z-index:1;}
+footer span{color:var(--yellow);font-weight:600;}
+
+@media (max-width:380px){
+  .hero{padding:2rem 1.25rem 1.75rem;}
+  .count-done{font-size:28px;}
+}
+</style>
+</head>
+<body>
+
+<div id="confetti-container"></div>
+
+<header>
+  <div class="logo">resultate<span class="dot"></span></div>
+  <div class="eyebrow">Painel de metas</div>
+</header>
+
+<div class="hero" id="hero">
+  <div class="loading-wrap" id="loading">
+    <div class="spinner"></div>
+    <p style="font-size:13px;color:var(--text2);">Carregando suas metas...</p>
+  </div>
+</div>
+
+<footer>
+  feito com <span>&hearts;</span> pela equipe Resultate
+</footer>
+
+<script>
+var GDRIVE_FILE_ID = '1HPgmQbBzwVsOEO9gOiHG2zrK8FUaf9HN';
+var GREETING_NAME = '';
+
+var MESSAGES = [
+  { min: 0,   max: 0,   text: "Vamos comecar! O mes esta so esperando voce." },
+  { min: 1,   max: 24,  text: "Boa, ja comecou! Continue nesse ritmo." },
+  { min: 25,  max: 49,  text: "Voce ja passou de 1/4 do caminho. Bora!" },
+  { min: 50,  max: 74,  text: "Mais da metade! Ta voando, continue assim." },
+  { min: 75,  max: 99,  text: "Quase la! Falta so um empurraozinho." },
+  { min: 100, max: 100, text: "META BATIDA! Voce e incrivel!" }
+];
+
+var TIPS = [
+  'Cortes nos primeiros 3 segundos retem muito mais atencao.',
+  'Musica no ritmo certo faz o corte parecer mais fluido.',
+  'Legendas grandes aumentam o tempo de visualizacao.',
+  'Varie o enquadramento, isso evita cansar o olhar de quem assiste.',
+  'Comece pelo final, edite pensando no impacto da ultima cena.',
+  'Silencio tambem e ferramenta de edicao, use pausas a seu favor.',
+  'Cores consistentes entre cortes dao um ar mais profissional.',
+  'Menos e mais, corte tudo que nao sustenta a ideia principal.',
+  'Testar diferentes thumbnails pode mudar muito o resultado.',
+  'Ritmo de corte deve acompanhar o ritmo da fala, nao o contrario.',
+  'Grave sempre um pouco mais de audio ambiente, ele salva edicoes.',
+  'Transicoes simples geralmente envelhecem melhor que efeitos chamativos.',
+  'Um bom gancho nos primeiros segundos vale mais que um roteiro inteiro.',
+  'Videos verticais pedem composicao diferente da horizontal, pense nisso.',
+  'Reaproveitar B-roll economiza tempo e mantem a identidade visual.',
+  'Testar com o som desligado ajuda a avaliar se a imagem conta a historia.',
+  'Organizar a timeline por blocos de cor agiliza qualquer revisao.',
+  'Backup automatico de projeto evita dores de cabeca desnecessarias.',
+  'Pequenos ajustes de saturacao podem dar um tom mais marcante a marca.',
+  'Um roteiro claro economiza horas de edicao depois.',
+  'Peca feedback antes de finalizar, outro olhar sempre ajuda.',
+  'Reveja o video no dia seguinte antes de entregar, o olhar muda.',
+  'Mantenha uma pasta de referencias visuais para inspirar novos cortes.',
+  'Aprender um atalho novo por semana acelera muito o fluxo de trabalho.',
+  'Grave sempre em mais de um angulo quando possivel, da liberdade na edicao.',
+  'Celebrar pequenas entregas ajuda a manter o ritmo do mes.',
+  'Comunicacao clara evita retrabalho, alinhe expectativas antes de comecar.',
+  'Pedir ajuda no momento certo e sinal de inteligencia, nao de fraqueza.',
+  'Organizacao hoje economiza tempo amanha.',
+  'Compartilhar conhecimento com a equipe fortalece todo o time.',
+  'Aceitar feedback com leveza e parte do crescimento profissional.',
+  'Comemorar as conquistas da equipe cria um ambiente mais leve.',
+  'Ouvir mais do que falar costuma resolver mais conflitos.',
+  'Gentileza no dia a dia constroi relacoes de longo prazo.',
+  'Reconhecer o trabalho dos colegas fortalece a confianca no time.',
+  'Pausas curtas durante o dia ajudam a manter o foco por mais tempo.',
+  'Organizar a agenda da semana reduz a sensacao de sobrecarga.',
+  'Pedir desculpas quando necessario fortalece relacoes, nao as fragiliza.',
+  'Curiosidade e um dos maiores motores de crescimento profissional.',
+  'Compartilhar meritos com quem ajudou e sempre bem visto.',
+  'Manter a calma sob pressao e uma habilidade que se treina.',
+  'Perguntar quando tiver duvida economiza tempo de todos.',
+  'Cada entrega e uma oportunidade de aprender algo novo.',
+  'Definir prioridades no inicio do dia evita correria no fim dele.',
+  'Networking tambem se constroi com pequenas trocas do dia a dia.',
+  'Aprender a dizer nao no momento certo protege sua produtividade.',
+  'Um ambiente colaborativo nasce de pequenas atitudes diarias.',
+  'Dar credito ao trabalho em equipe motiva todo mundo.',
+  'Receber criticas como combustivel, nao como ataque, acelera o crescimento.',
+  'Cuidar do proprio bem-estar reflete direto na qualidade do trabalho.',
+  'Revisar metas periodicamente ajuda a manter o foco no que importa.',
+  'Cada video entregue e um passo a mais rumo a meta do mes.'
+];
+
+function getMessage(pct, late) {
+  if (pct >= 100) return MESSAGES[5].text;
+  if (late > 5 && pct < 50) return "Tem " + late + " atrasados, hora de focar!";
+  for (var i = 0; i < MESSAGES.length; i++) {
+    if (pct >= MESSAGES[i].min && pct <= MESSAGES[i].max) return MESSAGES[i].text;
+  }
+  return MESSAGES[0].text;
+}
+
+function launchConfetti() {
+  var colors = ['#f5c400', '#7ed957', '#5ab4f0', '#ff6b6b', '#fde9a8'];
+  var container = document.getElementById('confetti-container');
+  for (var i = 0; i < 60; i++) {
+    var el = document.createElement('div');
+    el.className = 'confetti';
+    var size = 6 + Math.random() * 6;
+    el.style.width = size + 'px';
+    el.style.height = (size * 0.4) + 'px';
+    el.style.left = Math.random() * 100 + 'vw';
+    el.style.background = colors[Math.floor(Math.random() * colors.length)];
+    el.style.animation = 'fall ' + (2.5 + Math.random() * 2) + 's linear ' + (Math.random() * 1.5) + 's forwards';
+    container.appendChild(el);
+  }
+  setTimeout(function () { container.innerHTML = ''; }, 6000);
+}
+
+function startTipRotation() {
+  var tipEl = document.getElementById('tip-text');
+  if (!tipEl) return;
+  var idx = Math.floor(Math.random() * TIPS.length);
+  tipEl.innerHTML = '<i class="ti ti-bulb tip-icon" aria-hidden="true"></i>' + TIPS[idx];
+  setInterval(function () {
+    idx = (idx + 1) % TIPS.length;
+    tipEl.style.opacity = '0';
+    setTimeout(function () {
+      tipEl.innerHTML = '<i class="ti ti-bulb tip-icon" aria-hidden="true"></i>' + TIPS[idx];
+      tipEl.style.opacity = '1';
+    }, 350);
+  }, 9000);
+}
+
+function render(data) {
+  var loading = document.getElementById('loading');
+  if (loading) loading.remove();
+
+  var allDemands = [];
+  if (data && data.months) {
+    Object.keys(data.months).forEach(function (mid) {
+      var m = data.months[mid];
+      if (m.demands) allDemands = allDemands.concat(m.demands);
+    });
+  }
+
+  var todayISO = new Date().toISOString().slice(0, 10);
+  var total = allDemands.length;
+  var done = 0, late = 0, today = 0, ok = 0;
+
+  allDemands.forEach(function (d) {
+    var sit = String(d.situacao || '').toLowerCase().trim();
+    if (sit === 'entregue') { done++; return; }
+    if (!d.prazo) return;
+    if (d.prazo < todayISO) late++;
+    else if (d.prazo === todayISO) today++;
+    else ok++;
+  });
+
+  var pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  var fillColor = pct >= 100 ? 'var(--green)' : 'var(--yellow)';
+
+  var greetingText = GREETING_NAME
+    ? 'Ola, <strong>' + GREETING_NAME + '</strong>, aqui esta seu progresso'
+    : 'Aqui esta o progresso do mes';
+
+  var milestones = [
+    { pct: 25,  icon: 'ti-seeding', label: '25%' },
+    { pct: 50,  icon: 'ti-flame',   label: '50%' },
+    { pct: 75,  icon: 'ti-bolt',    label: '75%' },
+    { pct: 100, icon: 'ti-trophy',  label: '100%' }
+  ];
+
+  var ticksHtml = milestones.map(function (m) {
+    var reached = pct >= m.pct;
+    return '<div class="tick' + (reached ? ' on' : '') + '">' +
+      '<i class="ti ' + m.icon + '" aria-hidden="true"></i>' +
+      '<span class="tl">' + m.label + '</span>' +
+      '</div>';
+  }).join('');
+
+  var html =
+    '<p class="greeting">' + greetingText + '</p>' +
+    '<div class="count-row">' +
+      '<span class="count-done">' + done + '</span>' +
+      '<span class="count-sep">/</span>' +
+      '<span class="count-total">' + total + '</span>' +
+      '<span class="count-suffix">videos concluidos</span>' +
+    '</div>' +
+    '<div class="track-wrap">' +
+      '<div class="track">' +
+        '<div class="marker" style="left:25%;"></div>' +
+        '<div class="marker" style="left:50%;"></div>' +
+        '<div class="marker" style="left:75%;"></div>' +
+        '<div class="fill" id="fill" style="width:0%;background:' + fillColor + ';"></div>' +
+      '</div>' +
+      '<div class="ticks">' + ticksHtml + '</div>' +
+    '</div>' +
+    '<div class="message-box">' + getMessage(pct, late) + '</div>' +
+    '<div class="stats-row">' +
+      '<div class="stat stat-late"><div class="n">' + late + '</div><div class="l">Atrasados</div></div>' +
+      '<div class="stat stat-today"><div class="n">' + today + '</div><div class="l">Hoje</div></div>' +
+      '<div class="stat stat-ok"><div class="n">' + ok + '</div><div class="l">No prazo</div></div>' +
+    '</div>' +
+    '<div class="tip-divider"></div>' +
+    '<div class="tip-label">Dica do dia</div>' +
+    '<div class="tip-box"><p class="tip-text" id="tip-text" style="transition:opacity .35s ease;"></p></div>';
+
+  document.getElementById('hero').innerHTML = html;
+
+  setTimeout(function () {
+    var fill = document.getElementById('fill');
+    if (fill) fill.style.width = pct + '%';
+  }, 150);
+
+  startTipRotation();
+
+  if (pct >= 100 && total > 0) {
+    setTimeout(launchConfetti, 800);
+  }
+}
+
+function showError(msg) {
+  document.getElementById('hero').innerHTML =
+    '<div style="padding:1.5rem 0;text-align:center;">' +
+    '<i class="ti ti-cloud-off" style="font-size:32px;color:var(--text3);margin-bottom:12px;display:block;" aria-hidden="true"></i>' +
+    '<p style="font-size:14px;color:var(--text2);">' + msg + '</p>' +
+    '</div>';
+}
+
+fetch('https://www.googleapis.com/drive/v3/files/' + GDRIVE_FILE_ID + '?alt=media')
+  .then(function (r) {
+    if (!r.ok) throw new Error('status ' + r.status);
+    return r.json();
+  })
+  .then(render)
+  .catch(function (e) {
+    console.error('Erro ao carregar dados:', e);
+    showError('Nao foi possivel carregar os dados agora.<br>Tente novamente em alguns minutos.');
+  });
+</script>
+</body>
+</html>
