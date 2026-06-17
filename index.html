@@ -825,8 +825,8 @@ function renderMonthView(){
 
   // Tabela
   var tableHtml = viewMode === 'gravacoes'
-    ? '<th style="min-width:120px;">Cliente</th><th onclick="doSort(\'data\')" style="min-width:120px;">Data <span id="sort-data"></span></th><th style="min-width:110px;">Status</th><th style="width:36px;"></th>'
-    : '<th onclick="doSort(\'escopo\')" style="min-width:80px;">Escopo <span id="sort-escopo"></span></th><th onclick="doSort(\'situacao\')" style="min-width:110px;">Situação <span id="sort-situacao"></span></th><th onclick="doSort(\'prazo\')" style="min-width:120px;">1ª entrega <span id="sort-prazo"></span></th><th onclick="doSort(\'publicacao\')" style="min-width:120px;">Publicação <span id="sort-publicacao"></span></th><th onclick="doSort(\'roteiro\')" style="min-width:110px;">Roteiro <span id="sort-roteiro"></span></th><th style="min-width:80px;">Chave</th><th onclick="doSort(\'status\')" style="min-width:90px;">Status <span id="sort-status"></span></th><th style="width:36px;"></th>';
+    ? '<th style="min-width:140px;">Cliente</th><th onclick="doSort(\'data\')" style="min-width:120px;">Data <span id="sort-data"></span></th><th style="min-width:130px;">Situação</th><th style="width:36px;"></th>'
+    : '<th onclick="doSort(\'cliente\')" style="min-width:110px;">Cliente <span id="sort-cliente"></span></th><th onclick="doSort(\'escopo\')" style="min-width:80px;">Escopo <span id="sort-escopo"></span></th><th onclick="doSort(\'situacao\')" style="min-width:110px;">Situação <span id="sort-situacao"></span></th><th onclick="doSort(\'prazo\')" style="min-width:120px;">1ª entrega <span id="sort-prazo"></span></th><th onclick="doSort(\'publicacao\')" style="min-width:120px;">Publicação <span id="sort-publicacao"></span></th><th onclick="doSort(\'roteiro\')" style="min-width:110px;">Roteiro <span id="sort-roteiro"></span></th><th style="min-width:80px;">Chave</th><th onclick="doSort(\'status\')" style="min-width:90px;">Status <span id="sort-status"></span></th><th style="width:36px;"></th>';
   html+='<div class="card"><div style="overflow-x:auto;"><table class="dem-table"><thead><tr>'+tableHtml+'</tr></thead><tbody id="tbody"></tbody></table></div>'
     +'<div id="empty-msg" style="display:none;text-align:center;padding:2.5rem;font-size:13px;color:var(--text2);">Nenhuma demanda encontrada.</div>'
     +'</div>'
@@ -897,7 +897,7 @@ function renderTableRows(rows){
     var badgeHtml='<span class="badge '+st.cls+(row.obs?' badge-obs':'')+'"'+obsAttr+' onclick="openObs(\''+row.id+'\')" title="'+(row.obs?'Ver/editar observação':'Adicionar observação')+'" style="cursor:pointer;">'+st.label+obsDot+'</span>';
     var tr=document.createElement('tr');
     tr.innerHTML=
-      
+      '<td><span style="display:inline-flex;align-items:center;"><span class="client-dot" style="background:'+clientColor(row.clientId)+'"></span><span style="font-size:12px;">'+esc(clientName(row.clientId))+'</span></span></td>'+
       '<td><span class="editable" contenteditable="true" data-id="'+row.id+'" data-field="escopo">'+esc(row.escopo||'')+'</span></td>'+
       '<td><select class="inline-select" data-id="'+row.id+'" data-field="situacao">'+sitOpts+'</select></td>'+
       '<td><input type="date" value="'+(row.prazo||'')+'" data-id="'+row.id+'" data-field="prazo"></td>'+
@@ -1102,6 +1102,13 @@ function setViewMode(mode, filter){
     var isActive = c.dataset.mode === mode && c.dataset.filter === filter;
     c.classList.toggle('metric-active', isActive);
   });
+  // Atualizar cabeçalho da tabela de acordo com o modo
+  var thead = document.querySelector('.dem-table thead tr');
+  if(thead){
+    thead.innerHTML = viewMode === 'gravacoes'
+      ? '<th style="min-width:140px;">Cliente</th><th onclick="doSort(\'data\')" style="min-width:120px;">Data <span id="sort-data"></span></th><th style="min-width:130px;">Situação</th><th style="width:36px;"></th>'
+      : '<th onclick="doSort(\'cliente\')" style="min-width:110px;">Cliente <span id="sort-cliente"></span></th><th onclick="doSort(\'escopo\')" style="min-width:80px;">Escopo <span id="sort-escopo"></span></th><th onclick="doSort(\'situacao\')" style="min-width:110px;">Situação <span id="sort-situacao"></span></th><th onclick="doSort(\'prazo\')" style="min-width:120px;">1ª entrega <span id="sort-prazo"></span></th><th onclick="doSort(\'publicacao\')" style="min-width:120px;">Publicação <span id="sort-publicacao"></span></th><th onclick="doSort(\'roteiro\')" style="min-width:110px;">Roteiro <span id="sort-roteiro"></span></th><th style="min-width:80px;">Chave</th><th onclick="doSort(\'status\')" style="min-width:90px;">Status <span id="sort-status"></span></th><th style="width:36px;"></th>';
+  }
   // Só atualizar tabela
   if(viewMode === 'gravacoes'){
     renderGravTable();
