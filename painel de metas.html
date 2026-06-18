@@ -22,19 +22,22 @@
   --red:#ff6b6b;
   --blue:#5ab4f0;
 }
+html, body {
+  height: 100%;
+  margin: 0;
+}
 body{
   font-family:'Inter',sans-serif;
   background:radial-gradient(circle at 50% -10%, #1f1f1c 0%, #111110 55%);
   color:var(--text);
   height:100vh;
-  width:100vw;
+  width:100%;
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:center;
   padding:1rem;
   overflow:hidden;
-  position:fixed;
 }
 
 .confetti{position:fixed;top:-20px;border-radius:2px;opacity:0;pointer-events:none;z-index:5;}
@@ -128,9 +131,6 @@ header{display:flex;flex-direction:column;align-items:center;gap:4px;margin-bott
 .loading-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;padding:3rem 0;}
 .spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,0.1);border-top-color:var(--yellow);border-radius:50%;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
-
-footer{margin-top:2rem;font-size:11px;color:var(--text3);text-align:center;z-index:1;}
-footer span{color:var(--yellow);font-weight:600;}
 
 @media (max-width:380px){
   .hero{padding:2rem 1.25rem 1.75rem;}
@@ -357,7 +357,7 @@ function render(data) {
   }, 150);
 
   startTipRotation();
-  renderBubbles(allDemands);
+  setTimeout(function () { renderBubbles(allDemands); }, 50);
 
   if (pct >= 100 && total > 0) {
     setTimeout(launchConfetti, 800);
@@ -466,20 +466,32 @@ function showError(msg) {
   document.getElementById('hero').innerHTML =
     '<div style="padding:1.5rem 0;text-align:center;">' +
     '<i class="ti ti-cloud-off" style="font-size:32px;color:var(--text3);margin-bottom:12px;display:block;" aria-hidden="true"></i>' +
-    '<p style="font-size:14px;color:var(--text2);">' + msg + '</p>' +
+    '<p style="font-size:14px;color:var(--text2);margin-bottom:16px;">' + msg + '</p>' +
+    '<button onclick="loadData()" style="background:rgba(245,196,0,0.12);border:1px solid rgba(245,196,0,0.3);color:var(--yellow-soft);font-size:13px;font-weight:600;padding:8px 18px;border-radius:99px;cursor:pointer;font-family:inherit;">Tentar novamente</button>' +
     '</div>';
 }
 
-fetch('https://www.googleapis.com/drive/v3/files/' + GDRIVE_FILE_ID + '?alt=media&key=AIzaSyD15oXBQDAXNIvi1uejAscwxYqc5NP6hkw')
-  .then(function (r) {
-    if (!r.ok) throw new Error('status ' + r.status);
-    return r.json();
-  })
-  .then(render)
-  .catch(function (e) {
-    console.error('Erro ao carregar dados:', e);
-    showError('Nao foi possivel carregar os dados agora.<br>Tente novamente em alguns minutos.');
-  });
+function loadData() {
+  fetch('https://www.googleapis.com/drive/v3/files/' + GDRIVE_FILE_ID + '?alt=media&key=AIzaSyD15oXBQDAXNIvi1uejAscwxYqc5NP6hkw')
+    .then(function (r) {
+      if (!r.ok) throw new Error('status ' + r.status);
+      return r.json();
+    })
+    .then(render)
+    .catch(function (e) {
+      console.error('Erro ao carregar dados:', e);
+      showError('Nao foi possivel carregar os dados agora.<br>Tente novamente em alguns minutos.');
+    });
+}
+
+window.addEventListener('resize', function () {
+  var hero = document.getElementById('hero');
+  if (hero && document.getElementById('bubble-field').children.length) {
+    // Recalcular sem refazer fetch
+  }
+});
+
+loadData();
 </script>
 </body>
 </html>
