@@ -41,7 +41,7 @@ body{
   100%{transform:translateY(110vh) rotate(360deg);opacity:0;}
 }
 
-.bubble-field{position:absolute;inset:-40px;pointer-events:none;z-index:0;}
+.bubble-field{position:absolute;inset:-40px;pointer-events:none;z-index:2;}
 .bubble{position:absolute;pointer-events:auto;}
 .bubble svg{display:block;overflow:visible;}
 @keyframes bubbleFloat{
@@ -368,22 +368,38 @@ function renderBubbles(allDemands) {
   var count = Math.min(shuffled.length, 5 + Math.floor(Math.random() * 4));
   var selected = shuffled.slice(0, count);
 
-  var fieldW = field.clientWidth || 440;
-  var fieldH = field.clientHeight || 560;
+  var fieldW = field.clientWidth || 520;
+  var fieldH = field.clientHeight || 640;
   var placed = [];
+
+  // Margem interna do card real (inset:-40px no field, então 40px = borda do card)
+  var cardInset = 40;
 
   selected.forEach(function (d, i) {
     var done = String(d.situacao || '').toLowerCase().trim() === 'entregue';
     var label = d.chave || d.escopo || '';
-    var size = 56 + Math.floor(Math.random() * 30);
+    var size = 50 + Math.floor(Math.random() * 26);
 
     var x, y, tries = 0, ok2 = false;
-    while (tries < 12 && !ok2) {
-      x = Math.random() * (fieldW - size);
-      y = Math.random() * (fieldH - size);
+    while (tries < 16 && !ok2) {
+      // Escolher uma das 4 bordas (topo, baixo, esquerda, direita) e posicionar fora do card
+      var side = Math.floor(Math.random() * 4);
+      if (side === 0) { // topo
+        x = Math.random() * (fieldW - size);
+        y = Math.random() * (cardInset - size * 0.4);
+      } else if (side === 1) { // baixo
+        x = Math.random() * (fieldW - size);
+        y = fieldH - cardInset + Math.random() * (cardInset - size * 0.4) - (size - size*0.4);
+      } else if (side === 2) { // esquerda
+        x = Math.random() * (cardInset - size * 0.4);
+        y = Math.random() * (fieldH - size);
+      } else { // direita
+        x = fieldW - cardInset + Math.random() * (cardInset - size * 0.4) - (size - size*0.4);
+        y = Math.random() * (fieldH - size);
+      }
       ok2 = placed.every(function (p) {
         var dx = p.x - x, dy = p.y - y;
-        return Math.sqrt(dx * dx + dy * dy) > (size + p.size) * 0.55;
+        return Math.sqrt(dx * dx + dy * dy) > (size + p.size) * 0.5;
       });
       tries++;
     }
