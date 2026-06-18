@@ -41,7 +41,7 @@ body{
   100%{transform:translateY(110vh) rotate(360deg);opacity:0;}
 }
 
-.bubble-field{position:absolute;inset:-40px;pointer-events:none;z-index:2;}
+.bubble-field{position:absolute;inset:-120px;pointer-events:none;z-index:2;}
 .bubble{position:absolute;pointer-events:auto;}
 .bubble svg{display:block;overflow:visible;}
 @keyframes bubbleFloat{
@@ -373,7 +373,7 @@ function renderBubbles(allDemands) {
   var placed = [];
 
   // Margem interna do card real (inset:-40px no field, então 40px = borda do card)
-  var cardInset = 40;
+  var cardInset = 120;
 
   selected.forEach(function (d, i) {
     var done = String(d.situacao || '').toLowerCase().trim() === 'entregue';
