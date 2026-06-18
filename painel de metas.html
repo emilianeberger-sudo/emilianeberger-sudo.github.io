@@ -41,6 +41,21 @@ body{
   100%{transform:translateY(110vh) rotate(360deg);opacity:0;}
 }
 
+.bubble-field{position:absolute;inset:-40px;pointer-events:none;z-index:0;}
+.bubble{position:absolute;pointer-events:auto;}
+.bubble svg{display:block;overflow:visible;}
+@keyframes bubbleFloat{
+  0%,100%{transform:translateY(0px) translateX(0px);}
+  50%{transform:translateY(-14px) translateX(4px);}
+}
+@keyframes bubbleShake{
+  0%,100%{transform:translateX(0);}
+  20%{transform:translateX(-6px);}
+  40%{transform:translateX(5px);}
+  60%{transform:translateX(-4px);}
+  80%{transform:translateX(3px);}
+}
+
 header{display:flex;flex-direction:column;align-items:center;gap:4px;margin-bottom:1.75rem;z-index:1;}
 .logo{font-size:22px;font-weight:800;letter-spacing:-0.5px;color:var(--text);}
 .logo .dot{display:inline-block;width:7px;height:7px;background:var(--yellow);border-radius:1px;margin-left:1px;margin-bottom:3px;}
@@ -129,10 +144,13 @@ footer span{color:var(--yellow);font-weight:600;}
   <div class="eyebrow">Painel de metas</div>
 </header>
 
-<div class="hero" id="hero">
-  <div class="loading-wrap" id="loading">
-    <div class="spinner"></div>
-    <p style="font-size:13px;color:var(--text2);">Carregando suas metas...</p>
+<div style="position:relative;width:100%;max-width:440px;">
+  <div class="bubble-field" id="bubble-field"></div>
+  <div class="hero" id="hero">
+    <div class="loading-wrap" id="loading">
+      <div class="spinner"></div>
+      <p style="font-size:13px;color:var(--text2);">Carregando suas metas...</p>
+    </div>
   </div>
 </div>
 
@@ -331,10 +349,91 @@ function render(data) {
   }, 150);
 
   startTipRotation();
+  renderBubbles(allDemands);
 
   if (pct >= 100 && total > 0) {
     setTimeout(launchConfetti, 800);
   }
+}
+
+function renderBubbles(allDemands) {
+  var field = document.getElementById('bubble-field');
+  if (!field || !allDemands.length) return;
+  field.innerHTML = '';
+
+  // Selecionar aleatoriamente 5 a 8 demandas (misturando concluídas e pendentes)
+  var pool = allDemands.filter(function (d) { return d.chave || d.escopo; });
+  if (!pool.length) return;
+  var shuffled = pool.slice().sort(function () { return Math.random() - 0.5; });
+  var count = Math.min(shuffled.length, 5 + Math.floor(Math.random() * 4));
+  var selected = shuffled.slice(0, count);
+
+  var fieldW = field.clientWidth || 440;
+  var fieldH = field.clientHeight || 560;
+  var placed = [];
+
+  selected.forEach(function (d, i) {
+    var done = String(d.situacao || '').toLowerCase().trim() === 'entregue';
+    var label = d.chave || d.escopo || '';
+    var size = 56 + Math.floor(Math.random() * 30);
+
+    var x, y, tries = 0, ok2 = false;
+    while (tries < 12 && !ok2) {
+      x = Math.random() * (fieldW - size);
+      y = Math.random() * (fieldH - size);
+      ok2 = placed.every(function (p) {
+        var dx = p.x - x, dy = p.y - y;
+        return Math.sqrt(dx * dx + dy * dy) > (size + p.size) * 0.55;
+      });
+      tries++;
+    }
+    placed.push({ x: x, y: y, size: size });
+
+    var floatDur = 3.5 + Math.random() * 2;
+    var floatDelay = Math.random() * 2;
+
+    var el = document.createElement('div');
+    el.className = 'bubble';
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    el.style.width = size + 'px';
+    el.style.height = size + 'px';
+    el.style.animation = 'bubbleFloat ' + floatDur + 's ease-in-out ' + floatDelay + 's infinite';
+    el.style.cursor = 'pointer';
+
+    var opacity = done ? 1 : 0.32;
+    var fontSize = Math.max(8, size * 0.13);
+
+    el.innerHTML =
+      '<svg width="' + size + '" height="' + size + '" viewBox="0 0 100 100" style="opacity:' + opacity + ';overflow:visible;">' +
+        '<defs><radialGradient id="bbg' + i + '" cx="50%" cy="50%" r="55%">' +
+          '<stop offset="55%" stop-color="#ffffff" stop-opacity="0.03"></stop>' +
+          '<stop offset="100%" stop-color="#f5c400" stop-opacity="0.08"></stop>' +
+        '</radialGradient></defs>' +
+        '<circle cx="50" cy="50" r="47" fill="url(#bbg' + i + ')"></circle>' +
+        '<circle cx="50" cy="50" r="47" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.35"></circle>' +
+        '<ellipse cx="32" cy="26" rx="13" ry="7" fill="#ffffff" opacity="0.65" transform="rotate(-30 32 26)"></ellipse>' +
+        '<circle cx="68" cy="66" r="3.5" fill="#ffffff" opacity="0.4"></circle>' +
+        '<text x="50" y="54" text-anchor="middle" font-size="' + fontSize + '" font-weight="500" fill="#ffffff" opacity="0.9">' + label + '</text>' +
+      '</svg>';
+
+    el.addEventListener('click', function () {
+      if (done) {
+        el.style.animation = 'none';
+        el.style.transition = 'transform .25s ease, opacity .25s ease';
+        el.style.transform = 'scale(1.5)';
+        el.style.opacity = '0';
+        setTimeout(function () { el.remove(); }, 250);
+      } else {
+        el.style.animation = 'bubbleShake .4s ease';
+        setTimeout(function () {
+          el.style.animation = 'bubbleFloat ' + floatDur + 's ease-in-out 0s infinite';
+        }, 400);
+      }
+    });
+
+    field.appendChild(el);
+  });
 }
 
 function showError(msg) {
