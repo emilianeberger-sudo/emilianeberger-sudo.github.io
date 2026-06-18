@@ -46,7 +46,7 @@ header{background:#111110;padding:0 2rem;display:flex;align-items:center;height:
 .month-tab-add:hover{color:var(--text);}
 
 /* Layout */
-.container{max-width:1140px;margin:0 auto;padding:1.25rem 1.5rem;}
+.container{max-width:1320px;margin:0 auto;padding:1.25rem 1.5rem;}
 .btn{font-size:12px;padding:5px 12px;cursor:pointer;border-radius:99px;border:0.5px solid var(--border2);background:transparent;color:var(--text);font-family:'Inter',inherit;display:inline-flex;align-items:center;gap:5px;transition:background .1s;white-space:nowrap;}
 .btn:hover{background:var(--bg2);}
 .btn-primary{background:var(--text);color:var(--bg);border-color:var(--text);}
@@ -124,6 +124,7 @@ header{background:#111110;padding:0 2rem;display:flex;align-items:center;height:
 .dem-table tr:last-child td{border-bottom:none;}
 .dem-table tbody tr:nth-child(even) td{background:rgba(0,0,0,0.015);}
 .dem-table tr:hover td{background:var(--bg2)!important;}
+.dem-table tr:hover .row-del-btn{opacity:1!important;}
 .editable{cursor:text;border-radius:4px;display:block;min-height:24px;padding:2px 4px;outline:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .editable:hover{background:var(--bg3);}
 .editable:focus{outline:1.5px solid var(--info-text);background:var(--bg);white-space:normal;}
@@ -829,7 +830,7 @@ function renderMonthView(){
   html+='<div style="display:flex;gap:16px;align-items:flex-start;">';
 
   // Sidebar clientes
-  html+='<div style="width:155px;flex-shrink:0;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:12px;position:sticky;top:16px;">';
+  html+='<div style="width:120px;flex-shrink:0;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:10px;position:sticky;top:16px;">';
   html+='<p style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Cliente</p>';
   html+='<div style="display:flex;flex-direction:column;gap:3px;" id="client-chips">';
   html+='<button class="chip'+(activeClientFilter==='todos'?' active':'')+' " onclick="setClientFilter(\'todos\')" style="text-align:left;border-radius:6px;justify-content:flex-start;">Todos</button>';
@@ -936,9 +937,9 @@ function renderTableRows(rows){
       '<td><input type="date" value="'+(row.prazo||'')+'" data-id="'+row.id+'" data-field="prazo"></td>'+
       '<td><input type="date" value="'+(row.publicacao||'')+'" data-id="'+row.id+'" data-field="publicacao"></td>'+
       '<td><select class="inline-select" data-id="'+row.id+'" data-field="roteiro">'+rotOpts+'</select></td>'+
-      '<td>'+(link?'<a href="'+esc(link)+'" target="_blank" rel="noopener" style="color:var(--info-text);font-size:12px;text-decoration:none;">'+esc(row.chave||'abrir')+'</a>':'<span class="editable" contenteditable="true" data-id="'+row.id+'" data-field="chave">'+esc(row.chave||'—')+'</span>')+'</td>'+
+      '<td><span style="display:inline-flex;align-items:center;gap:5px;">'+(link?'<a href="'+esc(link)+'" target="_blank" rel="noopener" style="color:var(--info-text);font-size:12px;text-decoration:none;">'+esc(row.chave||'abrir')+'</a><span class="copy-link-icon" data-copy-link="'+esc(link)+'" title="Copiar link" style="cursor:pointer;font-size:12px;opacity:0.6;">🔗</span>':'<span class="editable" contenteditable="true" data-id="'+row.id+'" data-field="chave">'+esc(row.chave||'—')+'</span>')+'</span></td>'+
       '<td>'+badgeHtml+'</td>'+
-      '<td><button class="btn btn-danger" style="padding:2px 7px;font-size:11px;border-radius:4px;" data-del="'+row.id+'">✕</button></td>';
+      '<td><button class="btn btn-danger row-del-btn" style="padding:2px 7px;font-size:11px;border-radius:4px;opacity:0;transition:opacity .15s;" data-del="'+row.id+'">✕</button></td>';
     tbody.appendChild(tr);
   });
   if(rc)rc.textContent=rows.length+' demanda'+(rows.length!==1?'s':'');
@@ -982,6 +983,20 @@ document.addEventListener('change',function(e){
 });
 
 document.addEventListener('click',function(e){
+  // Copiar link da chave
+  var copyIcon=e.target.closest('[data-copy-link]');
+  if(copyIcon){
+    var linkToCopy=copyIcon.dataset.copyLink;
+    navigator.clipboard.writeText(linkToCopy).then(function(){
+      var original=copyIcon.textContent;
+      copyIcon.textContent='✓';
+      copyIcon.style.opacity='1';
+      setTimeout(function(){copyIcon.textContent=original;copyIcon.style.opacity='0.6';},1200);
+    }).catch(function(){
+      alert('Link: '+linkToCopy);
+    });
+    return;
+  }
   // Clique nos cards de métrica
   var card=e.target.closest('.mcard');
   if(card){
@@ -1028,7 +1043,7 @@ function renderGravTable(){
       '<td><span style="display:inline-flex;align-items:center;"><span class="client-dot" style="background:'+clientColor(g.clientId)+'"></span><span style="font-size:12px;">'+esc(clientName(g.clientId))+'</span></span></td>'+
       '<td><input type="date" value="'+(g.data||'')+'" data-grav-date="'+idx+'" style="font-size:12px;border:0.5px solid transparent;border-radius:4px;background:transparent;color:var(--text);cursor:pointer;font-family:inherit;padding:2px 4px;"></td>'+
       '<td><select class="inline-select" data-grav-idx="'+idx+'">'+opts+'</select></td>'+
-      '<td><button class="btn btn-danger" style="padding:2px 7px;font-size:11px;border-radius:4px;" data-del-grav="'+idx+'">✕</button></td>';
+      '<td><button class="btn btn-danger row-del-btn" style="padding:2px 7px;font-size:11px;border-radius:4px;opacity:0;transition:opacity .15s;" data-del-grav="'+idx+'">✕</button></td>';
     tbody.appendChild(tr);
   });
   if(rc)rc.textContent=gravs.length+' gravação'+(gravs.length!==1?'ões':'');
