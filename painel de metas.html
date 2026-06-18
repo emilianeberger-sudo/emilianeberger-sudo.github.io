@@ -417,7 +417,7 @@ function renderBubbles(allDemands) {
     el.style.animation = 'bubbleFloat ' + floatDur + 's ease-in-out ' + floatDelay + 's infinite';
     el.style.cursor = 'pointer';
 
-    var opacity = done ? 1 : 0.32;
+    var opacity = 1;
     var fontSize = Math.max(8, size * 0.13);
 
     el.innerHTML =
