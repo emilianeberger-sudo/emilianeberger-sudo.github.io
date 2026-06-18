@@ -41,7 +41,7 @@ body{
   100%{transform:translateY(110vh) rotate(360deg);opacity:0;}
 }
 
-.bubble-field{position:absolute;inset:-120px;pointer-events:none;z-index:2;}
+.bubble-field{position:absolute;inset:-180px;pointer-events:none;z-index:2;}
 .bubble{position:absolute;pointer-events:auto;}
 .bubble svg{display:block;overflow:visible;}
 @keyframes bubbleFloat{
@@ -361,65 +361,59 @@ function renderBubbles(allDemands) {
   if (!field || !allDemands.length) return;
   field.innerHTML = '';
 
-  // Todas as demandas do mês aparecem como bolhas
   var pool = allDemands.filter(function (d) { return d.chave || d.escopo; });
   if (!pool.length) return;
   var selected = pool.slice().sort(function () { return Math.random() - 0.5; });
 
   var fieldW = field.clientWidth || 680;
-  var fieldH = field.clientHeight || 760;
-  var cardInset = 120; // espessura da moldura externa onde as bolhas vivem
+  var fieldH = field.clientHeight || 900;
   var size = pool.length > 40 ? 38 : pool.length > 25 ? 46 : 56;
 
-  // Distribuir em um anel ao redor do perímetro (topo, base, esquerda, direita)
-  // proporcional ao perímetro de cada lado, com leve jitter aleatório
-  var topLen = fieldW, bottomLen = fieldW, leftLen = fieldH - 2 * cardInset, rightLen = fieldH - 2 * cardInset;
-  var totalPerimeter = topLen + bottomLen + leftLen + rightLen;
-  var step = totalPerimeter / selected.length;
-  var cursor = Math.random() * step;
+  // Zona de exclusão central (onde fica o card de conteúdo)
+  var cardInset = 180; // distância da borda do field até o card real
+  var exX0 = cardInset, exX1 = fieldW - cardInset;
+  var exY0 = cardInset, exY1 = fieldH - cardInset;
+
+  var placed = [];
 
   selected.forEach(function (d, i) {
     var done = String(d.situacao || '').toLowerCase().trim() === 'entregue';
     var label = d.chave || d.escopo || '';
     var thisSize = size + Math.floor(Math.random() * 12) - 6;
 
-    var pos = cursor % totalPerimeter;
-    var x, y;
-    var jitter = cardInset * 0.35;
-
-    if (pos < topLen) {
-      x = pos;
-      y = Math.random() * (cardInset - thisSize * 0.4);
-    } else if (pos < topLen + rightLen) {
-      x = fieldW - cardInset + Math.random() * jitter;
-      y = cardInset + (pos - topLen);
-    } else if (pos < topLen + rightLen + bottomLen) {
-      x = fieldW - (pos - topLen - rightLen);
-      y = fieldH - cardInset + Math.random() * (cardInset - thisSize * 0.4) - (thisSize - thisSize * 0.4);
-    } else {
-      x = Math.random() * (cardInset - thisSize * 0.4);
-      y = fieldH - cardInset - (pos - topLen - rightLen - bottomLen);
+    var x, y, tries = 0, valid = false;
+    while (tries < 24 && !valid) {
+      x = Math.random() * (fieldW - thisSize);
+      y = Math.random() * (fieldH - thisSize);
+      var cx = x + thisSize / 2, cy = y + thisSize / 2;
+      var insideCard = cx > exX0 && cx < exX1 && cy > exY0 && cy < exY1;
+      if (!insideCard) {
+        valid = placed.every(function (p) {
+          var dx = p.x - x, dy = p.y - y;
+          return Math.sqrt(dx * dx + dy * dy) > (thisSize + p.size) * 0.48;
+        });
+      }
+      tries++;
     }
-
-    cursor += step;
+    if (!valid) return; // se não achou espaço após várias tentativas, pula essa bolha
+    placed.push({ x: x, y: y, size: thisSize });
 
     var floatDur = 3.5 + Math.random() * 2;
     var floatDelay = Math.random() * 2;
 
     var el = document.createElement('div');
     el.className = 'bubble';
-    el.style.left = Math.max(0, Math.min(fieldW - thisSize, x)) + 'px';
-    el.style.top = Math.max(0, Math.min(fieldH - thisSize, y)) + 'px';
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
     el.style.width = thisSize + 'px';
     el.style.height = thisSize + 'px';
     el.style.animation = 'bubbleFloat ' + floatDur + 's ease-in-out ' + floatDelay + 's infinite';
     el.style.cursor = 'pointer';
 
-    var opacity = 1;
     var fontSize = Math.max(7, thisSize * 0.13);
 
     el.innerHTML =
-      '<svg width="' + thisSize + '" height="' + thisSize + '" viewBox="0 0 100 100" style="opacity:' + opacity + ';overflow:visible;">' +
+      '<svg width="' + thisSize + '" height="' + thisSize + '" viewBox="0 0 100 100" style="opacity:1;overflow:visible;">' +
         '<defs><radialGradient id="bbg' + i + '" cx="50%" cy="50%" r="55%">' +
           '<stop offset="55%" stop-color="#ffffff" stop-opacity="0.03"></stop>' +
           '<stop offset="100%" stop-color="#f5c400" stop-opacity="0.08"></stop>' +
