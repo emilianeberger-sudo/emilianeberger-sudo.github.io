@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Área de Trabalho</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  :root {
+    --fg: #3a3a3a;
+    --sfg: #7a7a7a;
+    --accent: #57a0d9;
+    --background: #eef0f2;
+    --bg-image: radial-gradient(circle at 20% 20%, #e8ecf3 0%, #dde2ea 45%, #cfd6e0 100%);
+    --glass-bg: rgba(255,255,255,0.22);
+    --glass-border: rgba(255,255,255,0.35);
+    --glass-shadow: rgba(31,38,57,0.06);
+    --link-bg: rgba(255,255,255,0.55);
+    --link-border: rgba(255,255,255,0.7);
+  }
+  .darktheme {
+    --fg: #e7e5e0;
+    --sfg: #9a9a9a;
+    --accent: #6fb1e8;
+    --background: #11121a;
+    --bg-image: radial-gradient(circle at 20% 20%, #1c1e2b 0%, #14151f 45%, #0c0c12 100%);
+    --glass-bg: rgba(30,32,44,0.25);
+    --glass-border: rgba(255,255,255,0.05);
+    --glass-shadow: rgba(0,0,0,0.3);
+    --link-bg: rgba(40,42,56,0.5);
+    --link-border: rgba(255,255,255,0.08);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Open Sans', sans-serif; transition: background-color .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease, opacity .25s ease; }
+  html, body {
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    background: var(--bg-image);
+    color: var(--fg);
+  }
+
+  /* ===== Toggle de tema ===== */
+  #themeButton {
+    position: fixed;
+    top: 18px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: var(--sfg);
+    cursor: pointer;
+    z-index: 50;
+    opacity: .6;
+  }
+  #themeButton:hover { opacity: 1; }
+  #themeIcon { width: 19px; height: 19px; }
+
+  /* ===== Layout geral: relógio grande + links + painéis + rodapé ===== */
+  .screen {
+    position: relative;
+    height: 100vh;
+    width: 100vw;
+    display: grid;
+    grid-template-rows: auto auto auto 1fr;
+    padding: 24px 36px 14px;
+    gap: 26px;
+  }
+
+  /* ---- Relógio grande, próprio espaço no topo ---- */
+  .topRow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .clock {
+    display: flex;
+    align-items: baseline;
+    font-weight: 700;
+    font-size: clamp(64px, 15vh, 150px);
+    line-height: 1;
+    letter-spacing: -2px;
+    color: var(--fg);
+  }
+  #separator { margin: 0 10px; opacity: .45; }
+  #greetings { font-size: clamp(14px, 2vh, 18px); color: var(--sfg); margin-top: 6px; }
+  #fulldate { font-size: clamp(12px, 1.6vh, 15px); color: var(--sfg); text-transform: capitalize; margin-top: 2px; }
+
+  /* ---- Links centrais (própria linha) ---- */
+  .links-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: clamp(14px, 2.4vh, 26px);
+    justify-content: center;
+    align-content: center;
+    max-width: 980px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .link-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: var(--link-bg);
+    border: 1px solid var(--link-border);
+    backdrop-filter: blur(14px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    border-radius: 20px;
+    padding: clamp(20px, 3.6vh, 38px) 10px;
+    color: var(--fg);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: clamp(13px, 1.6vh, 16px);
+    box-shadow: 0 4px 18px var(--glass-shadow);
+  }
+  .link-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 26px var(--glass-shadow);
+  }
+  .link-btn svg { width: clamp(26px, 4vh, 36px); height: clamp(26px, 4vh, 36px); color: var(--accent); }
+
+  /* ---- Faixa abaixo: demandas + metas + agenda lado a lado, compactos ---- */
+  .bottomPanels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 26px;
+    max-width: 700px;
+    margin: 0 auto;
+    width: 100%;
+    min-height: 0;
+    align-content: center;
+    height: 100%;
+  }
+
+  /* Faixas laterais (vidro fosco, bem discreto) */
+  .glassPanel {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(22px) saturate(140%);
+    -webkit-backdrop-filter: blur(22px) saturate(140%);
+    border-radius: 16px;
+    padding: 14px 16px;
+    height: 220px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 2px 10px var(--glass-shadow);
+    min-height: 0;
+  }
+  .glassPanel h2 {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--sfg);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-bottom: 10px;
+    opacity: .7;
+  }
+  .glassPanel h2 svg { width: 13px; height: 13px; }
+
+  /* ---- Metas (centro) ---- */
+  #metas-content { flex: 1; display: flex; flex-direction: column; justify-content: center; min-height: 0; }
+  .metas-count-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .metas-done { font-size: 32px; font-weight: 700; color: var(--accent); }
+  .metas-sep { font-size: 18px; color: var(--sfg); opacity: .6; }
+  .metas-total { font-size: 20px; font-weight: 600; color: var(--fg); opacity: .7; }
+  .metas-label { font-size: 12px; color: var(--sfg); text-align: center; opacity: .7; margin-bottom: 14px; }
+  .metas-bar-track {
+    background: var(--glass-border);
+    border-radius: 99px;
+    height: 7px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .metas-bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: var(--accent);
+    transition: width 1s ease;
+  }
+  .metas-sub-row {
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+    font-size: 12px;
+    color: var(--sfg);
+    opacity: .8;
+  }
+  .metas-sub-row span.n { font-weight: 700; color: var(--fg); opacity: .9; }
+
+  /* ---- Demandas (esquerda) ---- */
+  #todo-input-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  #todo-input {
+    flex: 1;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--glass-border);
+    background: rgba(255,255,255,0.25);
+    color: var(--fg);
+    font-size: 13.5px;
+    min-width: 0;
+  }
+  .darktheme #todo-input { background: rgba(255,255,255,0.06); }
+  #todo-input:focus { outline: none; border-color: var(--accent); }
+  #todo-input::placeholder { color: var(--sfg); }
+  #todo-add {
+    background: var(--accent);
+    border: none;
+    color: #fff;
+    padding: 8px 13px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  #todo-add:hover { opacity: .85; }
+  #todo-list {
+    list-style: none;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+  }
+  #todo-list::-webkit-scrollbar { width: 4px; }
+  #todo-list::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 4px; }
+  #todo-list li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--glass-border);
+  }
+  #todo-list li:last-child { border-bottom: none; }
+  #todo-list li.done span { text-decoration: line-through; opacity: .5; }
+  #todo-list li span { flex: 1; word-break: break-word; cursor: pointer; font-size: 13.5px; line-height: 1.3; color: var(--fg); opacity: .85; }
+  #todo-list li button {
+    background: none;
+    border: none;
+    color: var(--sfg);
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1;
+    opacity: .6;
+    flex-shrink: 0;
+  }
+  #todo-list li button:hover { opacity: 1; color: #e0626f; }
+
+  /* ---- Mensagens auxiliares (usado pelo card de Metas) ---- */
+  .agenda-empty { font-size: 11px; color: var(--sfg); line-height: 1.5; }
+
+  /* ---- Rodapé: notícias em ticker, uma de cada vez ---- */
+  .newsRow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 8px 0 2px;
+  }
+  .newsRow svg { width: 14px; height: 14px; color: var(--sfg); flex-shrink: 0; opacity: .7; }
+  #news-current {
+    font-size: clamp(11px, 1.3vh, 13px);
+    text-align: center;
+    max-width: 80vw;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  #news-current a { color: var(--fg); text-decoration: none; font-weight: 600; }
+  #news-current a:hover { color: var(--accent); }
+  #news-current .source { color: var(--sfg); font-weight: 400; }
+
+  @media (max-width: 900px) {
+    .links-grid { grid-template-columns: repeat(3, 1fr); max-width: 100%; }
+    .bottomPanels { grid-template-columns: 1fr; max-width: 100%; }
+    .clock { font-size: clamp(40px, 14vh, 70px); }
+  }
+</style>
+</head>
+<body>
+
+  <button id="themeButton" aria-label="Alternar tema">
+    <i id="themeIcon" data-lucide="moon"></i>
+  </button>
+
+  <div class="screen">
+
+    <div class="topRow">
+      <div class="clock">
+        <span id="hour"></span><span id="separator">:</span><span id="minutes"></span>
+      </div>
+      <div id="greetings"></div>
+      <div id="fulldate"></div>
+    </div>
+
+    <div class="links-grid">
+      <a class="link-btn" href="https://web.whatsapp.com" target="_blank" rel="noopener"><i data-lucide="message-circle"></i>WhatsApp</a>
+      <a class="link-btn" href="https://calendar.google.com/calendar/u/0/r" target="_blank" rel="noopener"><i data-lucide="calendar"></i>Agenda</a>
+      <a class="link-btn" href="https://jira.resultate.com.br/secure/Dashboard.jspa" target="_blank" rel="noopener"><i data-lucide="kanban-square"></i>Jira</a>
+      <a class="link-btn" href="https://emilianeberger-sudo.github.io/" target="_blank" rel="noopener"><i data-lucide="clipboard-list"></i>Demandas</a>
+      <a class="link-btn" href="https://emilianeberger-sudo.github.io/painel%20de%20metas.html" target="_blank" rel="noopener"><i data-lucide="target"></i>Metas</a>
+    </div>
+
+    <div class="bottomPanels">
+
+      <!-- Demandas -->
+      <div class="glassPanel">
+        <h2><i data-lucide="check-square"></i>Demandas</h2>
+        <div id="todo-input-row">
+          <input id="todo-input" type="text" placeholder="Adicionar...">
+          <button id="todo-add">+</button>
+        </div>
+        <ul id="todo-list"></ul>
+      </div>
+
+      <!-- Metas -->
+      <div class="glassPanel">
+        <h2><i data-lucide="target"></i>Metas do mês</h2>
+        <div id="metas-content">
+          <p class="agenda-empty">Carregando...</p>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="newsRow">
+      <i data-lucide="newspaper"></i>
+      <div id="news-current">Carregando notícias...</div>
+    </div>
+
+  </div>
+
+<script>
+// ---- Tema (claro/escuro) ----
+let darkTheme = localStorage.getItem('darkTheme');
+const themeToggle = document.getElementById('themeButton');
+const themeIcon = document.getElementById('themeIcon');
+
+const enableDark = () => {
+  document.body.classList.add('darktheme');
+  localStorage.setItem('darkTheme', 'enabled');
+  themeIcon.setAttribute('data-lucide', 'sun');
+  lucide.createIcons();
+};
+const disableDark = () => {
+  document.body.classList.remove('darktheme');
+  localStorage.setItem('darkTheme', 'disabled');
+  themeIcon.setAttribute('data-lucide', 'moon');
+  lucide.createIcons();
+};
+
+if (darkTheme === 'enabled') {
+  enableDark();
+} else if (darkTheme === 'disabled') {
+  disableDark();
+} else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+  enableDark();
+} else {
+  disableDark();
+}
+
+themeToggle.addEventListener('click', () => {
+  if (document.body.classList.contains('darktheme')) {
+    disableDark();
+  } else {
+    enableDark();
+  }
+});
+
+// ---- Relógio, saudação e data ----
+function updateClock() {
+  const now = new Date();
+  let h = now.getHours();
+  let m = now.getMinutes();
+  document.getElementById('hour').textContent = (h < 10 ? '0' : '') + h;
+  document.getElementById('minutes').textContent = (m < 10 ? '0' : '') + m;
+
+  let greeting;
+  if (h >= 5 && h < 12) greeting = 'Bom dia Emiliane';
+  else if (h >= 12 && h < 18) greeting = 'Boa tarde Emiliane';
+  else greeting = 'Boa noite Emiliane';
+  document.getElementById('greetings').textContent = greeting;
+
+  document.getElementById('fulldate').textContent = now.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' });
+}
+updateClock();
+setInterval(updateClock, 1000 * 10);
+
+// ---- To-do list ----
+const todoInput = document.getElementById('todo-input');
+const todoAdd = document.getElementById('todo-add');
+const todoList = document.getElementById('todo-list');
+const STORAGE_KEY = 'demandas-lista';
+
+function loadTodos() {
+  return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+}
+function saveTodos(items) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+}
+function renderTodos() {
+  const items = loadTodos();
+  todoList.innerHTML = '';
+  items.forEach((item, idx) => {
+    const li = document.createElement('li');
+    if (item.done) li.classList.add('done');
+    const span = document.createElement('span');
+    span.textContent = item.text;
+    span.onclick = () => {
+      const all = loadTodos();
+      all[idx].done = !all[idx].done;
+      saveTodos(all);
+      renderTodos();
+    };
+    const del = document.createElement('button');
+    del.textContent = '✕';
+    del.onclick = () => {
+      const all = loadTodos();
+      all.splice(idx, 1);
+      saveTodos(all);
+      renderTodos();
+    };
+    li.appendChild(span);
+    li.appendChild(del);
+    todoList.appendChild(li);
+  });
+}
+function addTodo() {
+  const text = todoInput.value.trim();
+  if (!text) return;
+  const items = loadTodos();
+  items.push({ text, done: false });
+  saveTodos(items);
+  todoInput.value = '';
+  renderTodos();
+}
+todoAdd.onclick = addTodo;
+todoInput.addEventListener('keydown', e => { if (e.key === 'Enter') addTodo(); });
+renderTodos();
+
+// ---- News ticker (uma por vez, troca automática) ----
+const NEWS_FEEDS = [
+  'https://www.meioemensagem.com.br/feed',
+  'https://mundodomarketing.com.br/feed/',
+  'https://www.adnews.com.br/feed'
+];
+let newsItems = [];
+let newsIndex = 0;
+
+function renderCurrentNews() {
+  const el = document.getElementById('news-current');
+  if (newsItems.length === 0) {
+    el.textContent = 'Não foi possível carregar as notícias agora.';
+    return;
+  }
+  const item = newsItems[newsIndex % newsItems.length];
+  el.innerHTML = '';
+  const a = document.createElement('a');
+  a.href = item.link;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  a.textContent = item.title;
+  const sep = document.createElement('span');
+  sep.className = 'source';
+  sep.textContent = '  ·  ' + item.source;
+  el.appendChild(a);
+  el.appendChild(sep);
+}
+
+async function loadNews() {
+  const allItems = [];
+  for (const feedUrl of NEWS_FEEDS) {
+    try {
+      const apiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(feedUrl);
+      const res = await fetch(apiUrl);
+      const data = await res.json();
+      if (data.status === 'ok' && data.items) {
+        data.items.slice(0, 5).forEach(item => {
+          allItems.push({
+            title: item.title,
+            link: item.link,
+            source: data.feed && data.feed.title ? data.feed.title : new URL(feedUrl).hostname,
+            date: item.pubDate ? new Date(item.pubDate) : new Date(0)
+          });
+        });
+      }
+    } catch (e) {
+      // ignore individual feed failures
+    }
+  }
+  allItems.sort((a, b) => b.date - a.date);
+  newsItems = allItems.slice(0, 20);
+  newsIndex = 0;
+  renderCurrentNews();
+}
+loadNews();
+setInterval(() => {
+  if (newsItems.length > 0) {
+    newsIndex++;
+    renderCurrentNews();
+  }
+}, 6000);
+
+// ---- Metas (mesma fonte de dados do Painel de Metas) ----
+const METAS_GDRIVE_FILE_ID = '1HPgmQbBzwVsOEO9gOiHG2zrK8FUaf9HN';
+const METAS_API_KEY = 'AIzaSyD15oXBQDAXNIvi1uejAscwxYqc5NP6hkw';
+
+function renderMetasError(msg) {
+  document.getElementById('metas-content').innerHTML = '<p class="agenda-empty">' + msg + '</p>';
+}
+
+function renderMetas(data) {
+  let allDemands = [];
+  if (data && data.months) {
+    Object.keys(data.months).forEach(mid => {
+      const m = data.months[mid];
+      if (m.demands) allDemands = allDemands.concat(m.demands);
+    });
+  }
+
+  const total = allDemands.length;
+  let done = 0;
+  allDemands.forEach(d => {
+    const sit = String(d.situacao || '').toLowerCase().trim();
+    if (sit === 'entregue') done++;
+  });
+  const pending = total - done;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  const html =
+    '<div class="metas-count-row">' +
+      '<span class="metas-done">' + done + '</span>' +
+      '<span class="metas-sep">/</span>' +
+      '<span class="metas-total">' + total + '</span>' +
+    '</div>' +
+    '<div class="metas-label">vídeos concluídos</div>' +
+    '<div class="metas-bar-track"><div class="metas-bar-fill" id="metas-bar-fill" style="width:0%;"></div></div>' +
+    '<div class="metas-sub-row">' +
+      '<span><span class="n">' + done + '</span> feitos</span>' +
+      '<span><span class="n">' + pending + '</span> pendentes</span>' +
+    '</div>';
+
+  document.getElementById('metas-content').innerHTML = html;
+  setTimeout(() => {
+    const fill = document.getElementById('metas-bar-fill');
+    if (fill) fill.style.width = pct + '%';
+  }, 100);
+}
+
+function loadMetas() {
+  fetch('https://www.googleapis.com/drive/v3/files/' + METAS_GDRIVE_FILE_ID + '?alt=media&key=' + METAS_API_KEY)
+    .then(r => { if (!r.ok) throw new Error('status ' + r.status); return r.json(); })
+    .then(renderMetas)
+    .catch(() => renderMetasError('Não foi possível carregar agora.'));
+}
+loadMetas();
+
+// ---- Icons ----
+lucide.createIcons();
+</script>
+</body>
+</html>
