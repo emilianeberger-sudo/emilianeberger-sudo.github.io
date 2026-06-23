@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard — Audiovisual Resultate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" async defer></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -17,38 +22,32 @@
   --radius:8px; --radius-lg:12px;
   --yellow:#f5c400;
 }
-@media (prefers-color-scheme:dark){
-  :root{
-    --bg:#1e1e1c;--bg2:#272725;--bg3:#2f2f2c;
-    --text:#f0ede8;--text2:#9e9e99;--text3:#6b6b66;
-    --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2);
-    --info-bg:#042c53;--info-text:#b5d4f4;
-    --danger-bg:#501313;--danger-text:#f7c1c1;
-    --success-bg:#173404;--success-text:#c0dd97;
-    --warn-bg:#412402;--warn-text:#fac775;
-  }
-}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh;}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh;}
 
-/* ---- Header ---- */
+/* Header */
 header{background:#111110;padding:0 2rem;display:flex;align-items:center;height:68px;gap:16px;}
 .header-logo span{font-size:20px;font-weight:700;letter-spacing:-0.5px;color:#d0d0cc;}
 .header-logo .dot{display:inline-block;width:7px;height:7px;background:var(--yellow);border-radius:1px;margin-left:1px;margin-bottom:1px;vertical-align:baseline;}
 .header-divider{width:1px;height:28px;background:rgba(255,255,255,0.12);}
 .header-titles .title{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#fff;}
 .header-titles .subtitle{font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:.03em;}
+.header-actions{margin-left:auto;display:flex;align-items:center;gap:10px;}
+#drive-status{font-size:11px;}
+.hbtn{font-size:12px;padding:5px 12px;cursor:pointer;border-radius:99px;border:0.5px solid rgba(255,255,255,0.2);background:transparent;color:rgba(255,255,255,0.6);font-family:inherit;white-space:nowrap;transition:all .15s;}
+.hbtn:hover{background:rgba(255,255,255,0.08);color:#fff;}
+.hbtn.connected{color:#82b366;border-color:#82b366;}
 
-/* ---- Abas de mês ---- */
-.month-tabs-wrap{background:var(--bg);border-bottom:0.5px solid var(--border);padding:0 2rem;display:flex;align-items:center;gap:0;overflow-x:auto;}
+/* Month tabs */
+.month-tabs-wrap{background:var(--bg);border-bottom:0.5px solid var(--border);padding:0 2rem;display:flex;align-items:center;overflow-x:auto;}
 .month-tab{font-size:13px;font-weight:500;padding:14px 18px;cursor:pointer;border:none;background:transparent;color:var(--text2);border-bottom:2px solid transparent;white-space:nowrap;font-family:inherit;transition:color .1s;}
 .month-tab:hover{color:var(--text);}
 .month-tab.active{color:var(--text);border-bottom-color:var(--yellow);}
 .month-tab-add{font-size:12px;padding:14px 14px;cursor:pointer;border:none;background:transparent;color:var(--text3);font-family:inherit;}
 .month-tab-add:hover{color:var(--text);}
 
-/* ---- Layout ---- */
-.container{max-width:1140px;margin:0 auto;padding:1.25rem 1.5rem;}
-.btn{font-size:12px;padding:5px 12px;cursor:pointer;border-radius:99px;border:0.5px solid var(--border2);background:transparent;color:var(--text);font-family:inherit;display:inline-flex;align-items:center;gap:5px;transition:background .1s;white-space:nowrap;}
+/* Layout */
+.container{max-width:1320px;margin:0 auto;padding:1.25rem 1.5rem;}
+.btn{font-size:12px;padding:5px 12px;cursor:pointer;border-radius:99px;border:0.5px solid var(--border2);background:transparent;color:var(--text);font-family:'Inter',inherit;display:inline-flex;align-items:center;gap:5px;transition:background .1s;white-space:nowrap;}
 .btn:hover{background:var(--bg2);}
 .btn-primary{background:var(--text);color:var(--bg);border-color:var(--text);}
 .btn-primary:hover{opacity:.82;}
@@ -57,22 +56,75 @@ header{background:#111110;padding:0 2rem;display:flex;align-items:center;height:
 .chip{font-size:12px;padding:3px 10px;cursor:pointer;border-radius:99px;border:0.5px solid var(--border2);background:transparent;color:var(--text2);font-family:inherit;white-space:nowrap;transition:background .1s;}
 .chip:hover{background:var(--bg2);}
 .chip.active{background:var(--text);color:var(--bg);border-color:var(--text);}
-.metric{background:var(--bg2);border-radius:var(--radius);padding:10px 14px;}
-.metric .lbl{font-size:11px;color:var(--text2);margin-bottom:3px;}
-.metric .val{font-size:22px;font-weight:500;}
-.badge{display:inline-flex;align-items:center;font-size:11px;font-weight:500;padding:2px 8px;border-radius:99px;white-space:nowrap;}
+
+/* Métricas */
+.metric{background:var(--bg);border-radius:var(--radius);padding:10px 14px;border:0.5px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,0.04);transition:box-shadow .15s,transform .15s;animation:fadeInUp .3s ease both;}
+.metric:hover{box-shadow:0 4px 12px rgba(0,0,0,0.08);transform:translateY(-1px);}
+.metric-active{outline:2px solid var(--yellow);outline-offset:-2px;}
+.metric .lbl{font-size:11px;color:var(--text2);margin-bottom:3px;font-weight:500;letter-spacing:.02em;}
+.metric .val{font-size:22px;font-weight:600;}
+
+
+
+
+
+
+@keyframes fadeInUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.do-animate .metric{animation:fadeInUp .3s ease both;}
+
+/* Progresso */
+.progress-wrap{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:1rem;}
+.progress-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.progress-label span{font-size:12px;color:var(--text2);}
+.progress-label strong{font-size:13px;color:var(--text);}
+.progress-bar-bg{background:var(--bg3);border-radius:99px;height:8px;overflow:hidden;}
+.progress-bar-fill{height:100%;border-radius:99px;background:var(--yellow);transition:width .8s cubic-bezier(.4,0,.2,1);}
+
+/* Badges */
+.badge{display:inline-flex;align-items:center;font-size:11px;font-weight:500;padding:2px 8px;border-radius:99px;white-space:nowrap;position:relative;}
 .b-late{background:var(--danger-bg);color:var(--danger-text);}
 .b-today{background:var(--info-bg);color:var(--info-text);}
 .b-ok{background:var(--success-bg);color:var(--success-text);}
 .b-none{background:var(--bg2);color:var(--text2);}
 .b-done{background:#e0f0ff;color:#1a4fa3;}
+
+/* Tooltip de observação */
+.badge-obs{cursor:pointer;}
+.badge-obs::after{
+  content:attr(data-obs);
+  position:absolute;
+  bottom:calc(100% + 6px);
+  left:50%;
+  transform:translateX(-50%);
+  background:#1a1a18;
+  color:#f0ede8;
+  font-size:11px;
+  font-weight:400;
+  padding:6px 10px;
+  border-radius:6px;
+  white-space:pre-wrap;
+  max-width:220px;
+  min-width:100px;
+  text-align:left;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity .15s;
+  z-index:99;
+  line-height:1.4;
+}
+.badge-obs:hover::after{opacity:1;}
+.obs-dot{width:5px;height:5px;border-radius:50%;background:currentColor;display:inline-block;margin-left:4px;opacity:0.6;}
+
+/* Tabela */
 .card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;}
 .dem-table{width:100%;border-collapse:collapse;font-size:13px;}
 .dem-table th{text-align:left;font-size:11px;font-weight:500;color:var(--text2);padding:8px 10px;border-bottom:0.5px solid var(--border);background:var(--bg);white-space:nowrap;cursor:pointer;user-select:none;}
 .dem-table th:hover{color:var(--text);}
 .dem-table td{padding:5px 8px;border-bottom:0.5px solid var(--border);vertical-align:middle;}
 .dem-table tr:last-child td{border-bottom:none;}
-.dem-table tr:hover td{background:var(--bg2);}
+.dem-table tbody tr:nth-child(even) td{background:rgba(0,0,0,0.015);}
+.dem-table tr:hover td{background:var(--bg2)!important;}
+.dem-table tr:hover .row-del-btn{opacity:1!important;}
 .editable{cursor:text;border-radius:4px;display:block;min-height:24px;padding:2px 4px;outline:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .editable:hover{background:var(--bg3);}
 .editable:focus{outline:1.5px solid var(--info-text);background:var(--bg);white-space:normal;}
@@ -82,50 +134,33 @@ header{background:#111110;padding:0 2rem;display:flex;align-items:center;height:
 input[type="date"]{font-size:12px;border:0.5px solid transparent;border-radius:4px;background:transparent;color:var(--text);cursor:pointer;width:118px;font-family:inherit;padding:2px 4px;}
 input[type="date"]:hover{border-color:var(--border2);background:var(--bg2);}
 input[type="date"]:focus{border-color:var(--info-text);background:var(--bg);outline:none;}
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:100;align-items:center;justify-content:center;}
 .modal-overlay.open{display:flex;}
-.modal{background:var(--bg);border-radius:var(--radius-lg);border:0.5px solid var(--border);padding:1.25rem;width:360px;max-width:92vw;max-height:90vh;overflow-y:auto;}
+.modal{background:var(--bg);border-radius:var(--radius-lg);border:0.5px solid var(--border);padding:1.25rem;width:380px;max-width:92vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.16);}
 .modal h2{font-size:14px;font-weight:500;margin-bottom:12px;}
 .modal label{font-size:12px;color:var(--text2);display:block;margin:10px 0 3px;}
-.modal input,.modal select{width:100%;font-size:13px;padding:6px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);font-family:inherit;outline:none;}
-.modal input:focus,.modal select:focus{border-color:var(--info-text);background:var(--bg);}
-.row-count{font-size:11px;color:var(--text3);text-align:right;margin-top:6px;}
+.modal input,.modal select,.modal textarea{width:100%;font-size:13px;padding:6px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);font-family:inherit;outline:none;}
+.modal textarea{resize:vertical;min-height:70px;}
+.modal input:focus,.modal select:focus,.modal textarea:focus{border-color:var(--info-text);background:var(--bg);}
+
+/* Gravações no modal */
+.rec-row{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg2);border-radius:var(--radius);margin-bottom:6px;}
+.rec-row .rec-client{font-size:13px;flex:1;font-weight:500;}
+.rec-row .rec-date{font-size:12px;color:var(--text2);}
+.rec-status{font-size:11px;font-weight:500;padding:2px 8px;border-radius:99px;white-space:nowrap;}
+.rec-realizada{background:var(--success-bg);color:var(--success-text);}
+.rec-pendente{background:var(--warn-bg);color:var(--warn-text);}
+.rec-agendada{background:var(--info-bg);color:var(--info-text);}
+.rec-nao-incluso{background:var(--bg2);color:var(--text3);}
+
 .client-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle;flex-shrink:0;}
 .alert{font-size:12px;padding:8px 12px;border-radius:var(--radius);margin-bottom:.75rem;}
 .alert-info{background:var(--info-bg);color:var(--info-text);}
 .alert-warn{background:var(--warn-bg);color:var(--warn-text);}
-.sit-entregue{background:var(--success-bg);color:var(--success-text);}
-.sit-pendente{background:var(--warn-bg);color:var(--warn-text);}
-.sit-vazio{background:var(--bg2);color:var(--text2);}
-.empty-month{text-align:center;padding:4rem 1rem;color:var(--text2);}
-.empty-month p{margin-bottom:1rem;font-size:14px;}
+.row-count{font-size:11px;color:var(--text3);text-align:right;margin-top:6px;}
 </style>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
-<script>
-// Callback chamado quando a lib do Google carrega
-function gsiClientLoaded(){
-  if(typeof google === 'undefined') return;
-  window._gsiReady = true;
-  gdriveTokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: '692889742633-ug2sr9cddjg8u0e4r0lhv9luf46cgh4t.apps.googleusercontent.com',
-    scope: 'https://www.googleapis.com/auth/drive.appdata',
-    callback: function(resp){
-      if(resp.error){ setDriveStatus('error'); return; }
-      gdriveUser = true;
-      updateAuthButton();
-      gdriveLoad();
-    }
-  });
-  updateAuthButton();
-}
-// Verificar periodicamente se o script carregou
-var _gsiCheck = setInterval(function(){
-  if(typeof google !== 'undefined' && google.accounts){
-    clearInterval(_gsiCheck);
-    gsiClientLoaded();
-  }
-}, 300);
-</script>
 </head>
 <body>
 
@@ -136,19 +171,17 @@ var _gsiCheck = setInterval(function(){
     <div class="title">Audiovisual Resultate</div>
     <div class="subtitle">Acompanhamento de demandas</div>
   </div>
-  <div style="margin-left:auto;display:flex;align-items:center;gap:12px;">
+  <div class="header-actions">
     <span id="drive-status"></span>
-    <button id="btn-drive" onclick="gdriveLogin()" style="font-size:12px;padding:5px 12px;cursor:pointer;border-radius:99px;border:0.5px solid rgba(255,255,255,0.2);background:transparent;color:rgba(255,255,255,0.6);font-family:inherit;white-space:nowrap;">&#9729; Entrar com Google</button>
+    <button class="hbtn" id="btn-reload" onclick="atualizarDrive()" title="Recarregar dados do Drive">atualizar</button>
+    <button class="hbtn" id="btn-backup" onclick="forceSave()" title="Salvar no Drive">salvar</button>
+    
+    <button class="hbtn" id="btn-drive" onclick="gdriveLogin()">☁ Entrar com Google</button>
   </div>
 </header>
 
-<div class="month-tabs-wrap" id="month-tabs-wrap">
-  <!-- abas geradas por JS -->
-</div>
-
-<div id="month-view">
-  <!-- conteúdo do mês ativo gerado por JS -->
-</div>
+<div class="month-tabs-wrap" id="month-tabs-wrap"></div>
+<div id="month-view"></div>
 
 <!-- Modal novo mês -->
 <div class="modal-overlay" id="modal-month">
@@ -166,7 +199,7 @@ var _gsiCheck = setInterval(function(){
 <!-- Modal demanda -->
 <div class="modal-overlay" id="modal-demand">
   <div class="modal">
-    <h2 id="modal-demand-title">Nova demanda</h2>
+    <h2>Nova demanda</h2>
     <label>Cliente</label>
     <select id="nd-cliente"></select>
     <label>Escopo</label>
@@ -175,6 +208,7 @@ var _gsiCheck = setInterval(function(){
     <select id="nd-situacao">
       <option value="">—</option>
       <option value="Pendente">Pendente</option>
+      <option value="Em alocação">Em alocação</option>
       <option value="Entregue">Entregue</option>
     </select>
     <label>Prazo 1ª entrega</label>
@@ -198,7 +232,7 @@ var _gsiCheck = setInterval(function(){
 
 <!-- Modal clientes -->
 <div class="modal-overlay" id="modal-clients">
-  <div class="modal" style="width:380px;">
+  <div class="modal" style="width:400px;">
     <h2>Clientes</h2>
     <div id="clients-list" style="margin:12px 0;display:flex;flex-direction:column;gap:6px;"></div>
     <div style="display:flex;gap:6px;margin-top:8px;">
@@ -226,8 +260,40 @@ var _gsiCheck = setInterval(function(){
   </div>
 </div>
 
+<!-- Modal gravações -->
+<div class="modal-overlay" id="modal-gravacoes">
+  <div class="modal" style="width:460px;">
+    <h2 id="modal-grav-title">Gravações</h2>
+    <div id="gravacoes-list" style="margin:12px 0;display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;"></div>
+    <div style="border-top:0.5px solid var(--border);padding-top:12px;margin-top:4px;">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:8px;font-weight:500;">Nova gravação</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end;">
+        <div style="flex:1;min-width:120px;"><label style="font-size:11px;color:var(--text3);display:block;margin-bottom:3px;">Cliente</label><select id="ng-cliente" style="width:100%;font-size:12px;padding:5px 8px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);font-family:inherit;outline:none;"></select></div>
+        <div><label style="font-size:11px;color:var(--text3);display:block;margin-bottom:3px;">Data</label><input type="date" id="ng-data" style="font-size:12px;padding:5px 8px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);font-family:inherit;outline:none;"></div>
+        <div><label style="font-size:11px;color:var(--text3);display:block;margin-bottom:3px;">Status</label><select id="ng-status" style="font-size:12px;padding:5px 8px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);font-family:inherit;outline:none;"><option value="Agendada">Agendada</option><option value="Pendente">Pendente</option><option value="Realizada">Realizada</option><option value="Não incluso">Não incluso</option></select></div>
+        <button class="btn btn-primary" onclick="addGravacao()" style="padding:6px 12px;">+ Add</button>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:1rem;">
+      <button class="btn" onclick="closeModal('modal-gravacoes')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal observação -->
+<div class="modal-overlay" id="modal-obs">
+  <div class="modal" style="width:340px;">
+    <h2>Observação</h2>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:8px;" id="obs-demand-label"></p>
+    <textarea id="obs-text" placeholder="Ex: Cliente pediu alteração no roteiro em cima da hora..."></textarea>
+    <div style="display:flex;gap:8px;margin-top:1.25rem;justify-content:flex-end;">
+      <button class="btn" onclick="closeModal('modal-obs')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmObs()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <script>
-// ---- Estado ----
 var STORAGE_KEY = 'dash_v4';
 var GDRIVE_CLIENT_ID = '692889742633-ug2sr9cddjg8u0e4r0lhv9luf46cgh4t.apps.googleusercontent.com';
 var GDRIVE_FILE_NAME = 'resultate_dashboard.json';
@@ -237,10 +303,8 @@ var gdriveUser = null;
 var gdriveSyncing = false;
 
 var state = {
-  clients: {},   // { id: { name, color } }
-  order: [],     // ordem dos clientes
-  months: {},    // { monthId: { name, demands: [] } }
-  monthOrder: [] // ordem dos meses
+  clients: {}, order: [],
+  months: {}, monthOrder: []
 };
 
 var activeMonth = null;
@@ -248,168 +312,352 @@ var activeClientFilter = 'todos';
 var activePrazoFilter = 'todos';
 var sortField = 'prazo'; var sortDir = 1;
 var pendingImport = null;
+var viewMode = 'videos'; // 'videos' ou 'gravacoes'
+var gravacaoFilter = 'todos'; // 'todos','realizada','agendada','pendente'
+var obsEditingId = null;
 var todayISO = new Date().toISOString().slice(0,10);
 var COLORS = ['#6c8ebf','#82b366','#d79b00','#ae4132','#7b68a6','#0e7490','#b45309','#166534','#9d174d','#1d4ed8'];
 var MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
+// ---- Storage ----
 function save(){
-  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch(e){}
-  if(gdriveTokenClient && gdriveUser) gdriveSaveDebounced();
+  // Salvar APENAS no localStorage — Drive só via botão manual "salvar"
+  try{
+    if(state && state.order && state.order.length > 0){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+  }catch(e){}
 }
-function load(){try{var s=localStorage.getItem(STORAGE_KEY);if(s)state=JSON.parse(s);}catch(e){}}
+function load(){} // desabilitado — fonte de dados é sempre o Drive
+
+// ---- Salvar manualmente no Drive ----
+function copyFileId(){
+  if(!gdriveFileId){
+    showAlert('Salve os dados primeiro para gerar o arquivo no Drive.','warn');
+    return;
+  }
+  navigator.clipboard.writeText(gdriveFileId).then(function(){
+    showAlert('ID copiado: '+gdriveFileId+' — cole no painel da equipe.','info');
+  }).catch(function(){
+    alert('ID do arquivo: '+gdriveFileId);
+  });
+}
+
+async function forceSave(){  if(!gdriveUser){showAlert('Faça login com o Google primeiro.','warn');return;}
+  var local = null;
+  try{ local = JSON.parse(localStorage.getItem(STORAGE_KEY)); }catch(e){}
+  if(local && local.order && local.order.length > 0) state = local;
+  if(!state || !state.order || !state.order.length){showAlert('Nenhum dado para salvar.','warn');return;}
+  var stored = sessionStorage.getItem('gd_token');
+  if(!stored){showAlert('Token expirado. Faça login novamente.','warn');return;}
+  var t = JSON.parse(stored);
+  if(t.expires <= Date.now()){showAlert('Sessão expirada. Faça login novamente.','warn');return;}
+  var token = t.token;
+  var fid = gdriveFileId || await findFileId(token);
+  setDriveStatus('saving');
+  try{
+    var body = JSON.stringify(state);
+    if(!fid){
+      // Criar arquivo novo na pasta normal (visível) do Drive
+      var meta = JSON.stringify({name:GDRIVE_FILE_NAME});
+      var form = new FormData();
+      form.append('metadata', new Blob([meta],{type:'application/json'}));
+      form.append('file', new Blob([body],{type:'application/json'}));
+      var rc = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',{
+        method:'POST',
+        headers:{'Authorization':'Bearer '+token},
+        body: form
+      });
+      var dc = await rc.json();
+      if(!dc.id) throw new Error(JSON.stringify(dc));
+      fid = dc.id;
+      gdriveFileId = fid;
+      console.log('Arquivo criado no Drive:', fid);
+    } else {
+      gdriveFileId = fid;
+      var r = await fetch('https://www.googleapis.com/upload/drive/v3/files/'+fid+'?uploadType=media',{
+        method:'PATCH',
+        headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+        body: body
+      });
+      var result = await r.json();
+      if(!result.id) throw new Error(JSON.stringify(result));
+    }
+    console.log('forceSave OK — tamanho:', body.length, '— fileId:', fid);
+    // Garantir que o arquivo é público para leitura (para o painel da colaboradora)
+    try{
+      await fetch('https://www.googleapis.com/drive/v3/files/'+fid+'/permissions',{
+        method:'POST',
+        headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+        body: JSON.stringify({role:'reader', type:'anyone'})
+      });
+    }catch(permErr){ console.warn('Erro ao definir permissão pública:', permErr); }
+    setDriveStatus('saved');
+    setTimeout(function(){setDriveStatus('idle');},3000);
+  }catch(e){
+    console.error('forceSave erro:',e);
+    setDriveStatus('error');
+    showAlert('Erro ao salvar. Tente novamente.','warn');
+  }
+}
 
 // ---- Google Drive ----
 var _saveTimer=null;
 function gdriveSaveDebounced(){
-  clearTimeout(_saveTimer);
-  _saveTimer=setTimeout(gdriveSave,1500);
-  setDriveStatus('saving');
+  if(!state||!state.order||!state.order.length||!state.monthOrder||!state.monthOrder.length){
+    console.warn('save BLOQUEADO — state vazio');return;
+  }
+  if(JSON.stringify(state).length < 100){console.warn('save BLOQUEADO — state pequeno');return;}
+  clearTimeout(_saveTimer);_saveTimer=setTimeout(gdriveSave,2000);setDriveStatus('saving');
 }
 
 function setDriveStatus(s){
-  var el=document.getElementById('drive-status');
-  if(!el)return;
+  var el=document.getElementById('drive-status');if(!el)return;
   var map={
-    'idle':'',
-    'saving':'<span style="color:rgba(255,255,255,0.5);font-size:11px;">&#9679; salvando...</span>',
-    'saved':'<span style="color:#82b366;font-size:11px;">&#10003; salvo no Drive</span>',
-    'error':'<span style="color:#f7c1c1;font-size:11px;">&#9888; erro ao salvar</span>',
-    'loading':'<span style="color:rgba(255,255,255,0.5);font-size:11px;">&#8635; carregando...</span>',
+    idle:'',
+    saving:'<span style="color:rgba(255,255,255,0.4);font-size:11px;">salvando...</span>',
+    saved:'<span style="color:#82b366;font-size:11px;">✓ salvo no Drive</span>',
+    error:'<span style="color:#f7c1c1;font-size:11px;">⚠ erro ao salvar</span>',
+    loading:'<span style="color:rgba(255,255,255,0.4);font-size:11px;">carregando...</span>',
   };
   el.innerHTML=map[s]||'';
 }
 
-// gdriveInit movido para o <head>
+function updateAuthButton(){
+  var btn=document.getElementById('btn-drive');if(!btn)return;
+  if(gdriveUser){btn.textContent='☁ conectado';btn.classList.add('connected');btn.onclick=gdriveLogout;}
+  else{btn.textContent='☁ Entrar com Google';btn.classList.remove('connected');btn.onclick=gdriveLogin;}
+}
 
 function gdriveLogin(){
-  if(!window._gsiReady || !gdriveTokenClient){
-    // tentar inicializar novamente
-    if(typeof google !== 'undefined' && google.accounts){
-      gsiClientLoaded();
-      setTimeout(function(){ if(gdriveTokenClient) gdriveTokenClient.requestAccessToken(); }, 500);
-    } else {
-      alert('API do Google não carregou. Verifique sua conexão e recarregue a página.');
-    }
+  if(!gdriveTokenClient){
+    setTimeout(gdriveLogin, 500); // aguardar lib carregar
     return;
   }
-  gdriveTokenClient.requestAccessToken();
+  gdriveTokenClient.callback=function(resp){
+    if(window._loginTimeout){clearTimeout(window._loginTimeout);window._loginTimeout=null;}
+    if(resp.error){
+      console.error('Login error:', resp.error);
+      setDriveStatus('idle');
+      var wi=document.getElementById('wait-inner');
+      if(wi) wi.innerHTML='<p style="font-size:13px;color:var(--text2);text-align:center;margin-bottom:8px;">Erro ao conectar.<br>Tente novamente.</p><button class="btn btn-primary" onclick="startLogin()">☁ Entrar com Google</button>';
+      return;
+    }
+    sessionStorage.setItem('gd_token',JSON.stringify({token:resp.access_token,expires:Date.now()+3500000}));
+    gdriveUser=true;
+    updateAuthButton();
+    gdriveLoad();
+  };
+  gdriveTokenClient.requestAccessToken({prompt:'select_account'});
 }
 
 function gdriveLogout(){
-  var token=gapi&&gapi.client&&gapi.client.getToken&&gapi.client.getToken();
-  if(token) google.accounts.oauth2.revoke(token.access_token);
-  gdriveUser=null; gdriveFileId=null;
-  updateAuthButton();
-  setDriveStatus('idle');
+  gdriveUser=null;gdriveFileId=null;
+  sessionStorage.removeItem('gd_token');
+  updateAuthButton();setDriveStatus('idle');
 }
 
-function updateAuthButton(){
-  var btn=document.getElementById('btn-drive');
-  if(!btn)return;
-  if(gdriveUser){
-    btn.textContent='☁ Drive: conectado';
-    btn.onclick=gdriveLogout;
-    btn.style.color='#82b366';
-  } else {
-    btn.textContent='☁ Entrar com Google';
-    btn.onclick=gdriveLogin;
-    btn.style.color='rgba(255,255,255,0.6)';
-  }
-}
-
-async function gdriveApiCall(method, url, body, token){
-  var opts={method:method, headers:{'Authorization':'Bearer '+token}};
-  if(body){
-    if(typeof body==='string'){opts.headers['Content-Type']='application/json';opts.body=body;}
-    else{opts.body=body;}
-  }
-  var r=await fetch(url,opts);
-  if(!r.ok) throw new Error('Drive API '+r.status);
-  return r;
-}
-
-async function gdriveGetToken(){
-  // pegar token atual do cliente OAuth
+async function getToken(){
   return new Promise(function(resolve,reject){
-    if(!gdriveTokenClient){reject('no client');return;}
-    // reusar token em cache se disponível
+    // Usar token em cache se ainda válido
     var stored=sessionStorage.getItem('gd_token');
-    if(stored){var t=JSON.parse(stored);if(t.expires>Date.now()){resolve(t.token);return;}}
-    gdriveTokenClient.callback=function(resp){
-      if(resp.error){reject(resp.error);return;}
-      sessionStorage.setItem('gd_token',JSON.stringify({token:resp.access_token,expires:Date.now()+3500000}));
-      resolve(resp.access_token);
-    };
-    gdriveTokenClient.requestAccessToken({prompt:''});
+    if(stored){
+      try{
+        var t=JSON.parse(stored);
+        if(t.expires>Date.now()+60000){resolve(t.token);return;}
+      }catch(e){}
+    }
+    // Sem cache — precisa de interação do usuário
+    reject('no_token');
   });
 }
 
-async function gdriveFindFile(token){
-  var r=await gdriveApiCall('GET',
-    "https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D'"+GDRIVE_FILE_NAME+"'&fields=files(id,name)",
-    null,token);
-  var data=await r.json();
-  return data.files&&data.files.length?data.files[0].id:null;
+async function apiFetch(method,url,body,token){
+  var opts={method:method,headers:{'Authorization':'Bearer '+token}};
+  if(body instanceof FormData){opts.body=body;}
+  else if(body){opts.headers['Content-Type']='application/json';opts.body=typeof body==='string'?body:JSON.stringify(body);}
+  var r=await fetch(url,opts);
+  if(!r.ok)throw new Error('Drive '+r.status);
+  return r;
+}
+
+async function findFileId(token){
+  var r=await apiFetch('GET',"https://www.googleapis.com/drive/v3/files?q=name%3D'"+GDRIVE_FILE_NAME+"'+and+trashed%3Dfalse&fields=files(id,name)",null,token);
+  var d=await r.json();
+  return d.files&&d.files.length?d.files[0].id:null;
 }
 
 async function gdriveSave(){
-  if(gdriveSyncing)return;
-  gdriveSyncing=true;
+  // Proteção tripla: nunca salvar state vazio ou sem clientes/meses
+  if(!state||!state.order||!state.order.length||!state.monthOrder||!state.monthOrder.length){
+    console.warn('gdriveSave BLOQUEADO — state vazio ou incompleto');
+    gdriveSyncing=false;
+    return;
+  }
+  // Verificar tamanho mínimo — dados reais têm mais de 100 chars
+  if(JSON.stringify(state).length < 100){
+    console.warn('gdriveSave BLOQUEADO — state muito pequeno');
+    gdriveSyncing=false;
+    return;
+  }
+  if(gdriveSyncing)return;gdriveSyncing=true;
+  console.log('gdriveSave: salvando', state.order.length, 'clientes,', state.monthOrder.length, 'meses');
   try{
-    var token=await gdriveGetToken();
-    var json=JSON.stringify(state);
-    var blob=new Blob([json],{type:'application/json'});
-    if(!gdriveFileId) gdriveFileId=await gdriveFindFile(token);
+    var token=await getToken();
+    var blob=new Blob([JSON.stringify(state)],{type:'application/json'});
+    if(!gdriveFileId)gdriveFileId=await findFileId(token);
     if(gdriveFileId){
-      // atualizar arquivo existente
-      await gdriveApiCall('PATCH',
-        'https://www.googleapis.com/upload/drive/v3/files/'+gdriveFileId+'?uploadType=media',
-        blob, token);
+      await apiFetch('PATCH','https://www.googleapis.com/upload/drive/v3/files/'+gdriveFileId+'?uploadType=media',blob,token);
     } else {
-      // criar novo arquivo na appDataFolder
-      var meta=JSON.stringify({name:GDRIVE_FILE_NAME,parents:['appDataFolder']});
+      var meta=JSON.stringify({name:GDRIVE_FILE_NAME});
       var form=new FormData();
       form.append('metadata',new Blob([meta],{type:'application/json'}));
       form.append('file',blob);
-      var r=await gdriveApiCall('POST',
-        'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
-        form, token);
-      var data=await r.json();
-      gdriveFileId=data.id;
+      var r=await apiFetch('POST','https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',form,token);
+      var d=await r.json();gdriveFileId=d.id;
     }
-    setDriveStatus('saved');
-    setTimeout(function(){setDriveStatus('idle');},3000);
-  }catch(e){
-    console.error('Drive save error',e);
-    setDriveStatus('error');
-  }
+    setDriveStatus('saved');setTimeout(function(){setDriveStatus('idle');},3000);
+  }catch(e){console.error('Drive save',e);setDriveStatus('error');}
   gdriveSyncing=false;
+}
+
+function startLogin(){
+  var wi=document.getElementById('wait-inner');
+  if(wi) wi.innerHTML=
+    '<div style="width:24px;height:24px;border:2.5px solid var(--border2);border-top-color:var(--yellow);border-radius:50%;animation:spin .8s linear infinite;"></div>'
+    +'<p style="font-size:12px;color:var(--text3);">Conectando...</p>';
+  // Timeout de segurança — se não conectar em 12s, volta para o botão
+  var loginTimeout=setTimeout(function(){
+    var wi2=document.getElementById('wait-inner');
+    if(wi2&&wi2.querySelector('p')&&wi2.querySelector('p').textContent==='Conectando...'){
+      wi2.innerHTML='<p style="font-size:13px;color:var(--text2);text-align:center;margin-bottom:8px;">Não foi possível conectar.<br>Tente novamente.</p>'
+        +'<button class="btn btn-primary" onclick="startLogin()">☁ Entrar com Google</button>';
+    }
+  },12000);
+  window._loginTimeout=loginTimeout;
+  gdriveLogin();
+}
+
+function showWaitScreen(){
+  if(!document.getElementById('spin-style')){
+    var st=document.createElement('style');
+    st.id='spin-style';
+    st.textContent='@keyframes spin{to{transform:rotate(360deg);}} @keyframes fadeIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}';
+    document.head.appendChild(st);
+  }
+  document.getElementById('month-view').innerHTML=
+    '<div style="min-height:80vh;display:flex;align-items:center;justify-content:center;padding:2rem;">'
+    +'<div style="background:var(--bg);border:0.5px solid var(--border);border-radius:20px;padding:3rem 3.5rem;display:flex;flex-direction:column;align-items:center;gap:24px;max-width:380px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.08);animation:fadeIn .4s ease both;">'
+    // Logo
+    +'<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">'
+    +'<div style="font-size:28px;font-weight:700;letter-spacing:-0.5px;color:var(--text);">resultate<span style="display:inline-block;width:8px;height:8px;background:#f5c400;border-radius:1px;margin-left:2px;margin-bottom:2px;vertical-align:baseline;"></span></div>'
+    +'</div>'
+    // Divider
+    +'<div style="width:40px;height:1.5px;background:var(--border2);border-radius:99px;"></div>'
+    // Bem-vindo
+    +'<div style="text-align:center;">'
+    +'<p style="font-size:20px;font-weight:600;color:var(--text);margin-bottom:6px;">Olá, Emiliane</p>'
+    +'<p style="font-size:13px;color:var(--text2);line-height:1.5;">Painel de acompanhamento audiovisual.<br>Faça login para acessar seus dados.</p>'
+    +'</div>'
+    // Botão de login
+    +'<div id="wait-inner" style="display:flex;flex-direction:column;align-items:center;gap:10px;">'
+    +'<button class="btn btn-primary" onclick="startLogin()" style="padding:8px 24px;font-size:13px;border-radius:99px;">☁ Entrar com Google</button>'
+    +'</div>'
+    +'</div>'
+    +'</div>';
+}
+
+async function atualizarDrive(){
+  var stored=sessionStorage.getItem('gd_token');
+  if(!stored){showAlert('Faça login primeiro.','warn');return;}
+  var t; try{t=JSON.parse(stored);}catch(e){showAlert('Sessão inválida.','warn');return;}
+  if(t.expires<=Date.now()){showAlert('Sessão expirada. Faça login novamente.','warn');gdriveUser=false;updateAuthButton();return;}
+  setDriveStatus('loading');
+  try{
+    var fid=gdriveFileId||await findFileId(t.token);
+    if(!fid){showAlert('Arquivo não encontrado no Drive.','warn');setDriveStatus('idle');return;}
+    gdriveFileId=fid;
+    var r=await apiFetch('GET','https://www.googleapis.com/drive/v3/files/'+fid+'?alt=media',null,t.token);
+    var data=await r.json();
+    if(data&&data.months){
+      state=data;
+      if(state.monthOrder&&state.monthOrder.length) activeMonth=state.monthOrder[0];
+      else activeMonth=null;
+      renderAll();
+      setDriveStatus('saved');
+      setTimeout(function(){setDriveStatus('idle');},3000);
+    } else {
+      showAlert('Não foi possível ler os dados do Drive.','warn');
+      setDriveStatus('idle');
+    }
+  }catch(e){
+    console.error('Atualizar erro:',e);
+    setDriveStatus('error');
+    showAlert('Erro ao atualizar. Tente novamente.','warn');
+  }
 }
 
 async function gdriveLoad(){
   setDriveStatus('loading');
   try{
-    var token=await gdriveGetToken();
-    var fid=await gdriveFindFile(token);
-    if(!fid){setDriveStatus('idle');return;}
+    // Pegar token do cache
+    var stored=sessionStorage.getItem('gd_token');
+    if(!stored) throw new Error('no_token');
+    var t=JSON.parse(stored);
+    if(t.expires<=Date.now()) throw new Error('token_expired');
+    var token=t.token;
+    gdriveUser=true; updateAuthButton();
+    var fid=await findFileId(token);
+    if(!fid){ setDriveStatus('idle'); renderAll(); return; }
     gdriveFileId=fid;
-    var r=await gdriveApiCall('GET',
-      'https://www.googleapis.com/drive/v3/files/'+fid+'?alt=media',
-      null, token);
+    var r=await apiFetch('GET','https://www.googleapis.com/drive/v3/files/'+fid+'?alt=media',null,token);
     var data=await r.json();
-    if(data&&data.months){
+    if(data&&data.months&&data.order&&data.order.length>0){
       state=data;
-      if(state.monthOrder&&state.monthOrder.length)activeMonth=state.monthOrder[0];
-      localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
-      renderAll();
+      if(state.monthOrder&&state.monthOrder.length) activeMonth=state.monthOrder[0];
+      else activeMonth=null;
     }
+    renderAll();
     setDriveStatus('saved');
     setTimeout(function(){setDriveStatus('idle');},3000);
   }catch(e){
-    console.error('Drive load error',e);
-    setDriveStatus('error');
+    console.error('Drive load error:',e);
+    setDriveStatus('idle');
+    if(String(e.message||e).includes('no_token')||String(e.message||e).includes('token_expired')){
+      // Sessão expirada — mostrar tela de login
+      gdriveUser=false; updateAuthButton();
+      showWaitScreen();
+      setTimeout(function(){
+        var wi=document.getElementById('wait-inner');
+        if(wi) wi.innerHTML='<p style="font-size:13px;color:var(--text2);text-align:center;margin-bottom:8px;">Sessão expirada.</p><button class="btn btn-primary" onclick="startLogin()">☁ Entrar com Google</button>';
+      },100);
+    } else {
+      // Outro erro — não sair da tela atual
+      showAlert('Erro ao carregar do Drive. Tente clicar em atualizar.','warn');
+      renderAll();
+    }
   }
 }
+
+// ---- GSI init ----
+var _gsiCheck=setInterval(function(){
+  if(typeof google!=='undefined'&&google.accounts){
+    clearInterval(_gsiCheck);
+    gdriveTokenClient=google.accounts.oauth2.initTokenClient({
+      client_id:GDRIVE_CLIENT_ID,
+      scope:'https://www.googleapis.com/auth/drive.file',
+      callback:function(resp){
+        if(resp.error){setDriveStatus('error');return;}
+        // Salvar token com expiração
+        sessionStorage.setItem('gd_token',JSON.stringify({token:resp.access_token,expires:Date.now()+3500000}));
+        gdriveUser=true;
+        updateAuthButton();
+        gdriveLoad();
+      }
+    });
+    updateAuthButton();
+  }
+},300);
 
 // ---- Helpers ----
 function norm(s){return String(s||'').toLowerCase().trim();}
@@ -417,6 +665,7 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function clientColor(id){return(state.clients[id]&&state.clients[id].color)||'#888';}
 function clientName(id){return(state.clients[id]&&state.clients[id].name)||'?';}
 function monthDemands(){return activeMonth&&state.months[activeMonth]?state.months[activeMonth].demands:[];}
+function monthGravacoes(){return activeMonth&&state.months[activeMonth]?state.months[activeMonth].gravacoes||[]:[]}
 
 function excelDateToISO(v){
   if(!v&&v!==0)return'';
@@ -431,8 +680,11 @@ function excelDateToISO(v){
   return'';
 }
 
+function fmtDate(iso){if(!iso)return'—';var p=iso.split('-');return p[2]+'/'+p[1]+'/'+p[0];}
+
 function getStatus(prazo,situacao){
   if(norm(situacao)==='entregue')return{label:'concluído',cls:'b-done',ord:4};
+  if(norm(situacao)==='em alocação'||norm(situacao)==='em alocacao')return{label:'no prazo',cls:'b-ok',ord:2};
   if(!prazo)return{label:'sem data',cls:'b-none',ord:3};
   if(prazo<todayISO)return{label:'atrasado',cls:'b-late',ord:0};
   if(prazo===todayISO)return{label:'hoje',cls:'b-today',ord:1};
@@ -446,7 +698,7 @@ function jiraLink(chave){
   return'';
 }
 
-// ---- XLSX parsing ----
+// ---- XLSX ----
 function findHeaderRow(sheet){
   var range=XLSX.utils.decode_range(sheet['!ref']||'A1:N100');
   for(var r=range.s.r;r<=Math.min(range.e.r,20);r++){
@@ -462,103 +714,66 @@ function isVideoMarked(v){
   var s=norm(String(v||''));
   return s==='x'||s==='sim'||s==='yes'||s==='✓'||s==='v'||s==='true'||s==='1';
 }
-function col(headers,terms){
-  for(var i=0;i<terms.length;i++){
-    var idx=headers.findIndex(function(h){return h.includes(terms[i]);});
-    if(idx>=0)return idx;
-  }
+function colIdx(headers,terms){
+  for(var i=0;i<terms.length;i++){var idx=headers.findIndex(function(h){return h.includes(terms[i]);});if(idx>=0)return idx;}
   return-1;
 }
-
-function detectMonthFromSheet(sheetName){
-  var n=norm(sheetName);
-  for(var i=0;i<MONTHS_PT.length;i++){
-    if(n.includes(norm(MONTHS_PT[i])))return i; // 0=jan
-  }
+function detectMonthFromSheet(name){
+  var n=norm(name);
+  for(var i=0;i<MONTHS_PT.length;i++){if(n.includes(norm(MONTHS_PT[i])))return i;}
   return-1;
 }
-
+function detectYearFromWb(wb){
+  var y=null;wb.SheetNames.forEach(function(n){var m=n.match(/20\d\d/);if(m)y=m[0];});
+  return y||new Date().getFullYear();
+}
 function parseSheetRows(sheet,clientId){
   var hr=findHeaderRow(sheet);
   var range=XLSX.utils.decode_range(sheet['!ref']||'A1:N200');
   var headers=[];
-  for(var c=range.s.c;c<=range.e.c;c++){
-    var cell=sheet[XLSX.utils.encode_cell({r:hr,c:c})];
-    headers.push(cell?norm(String(cell.v)):'');
-  }
-  var iEsc=col(headers,['escopo']),iSit=col(headers,['situa']),iChave=col(headers,['chave']);
-  var iPrazo=col(headers,['prazo','1ª entrega','primeira entrega','entrega']);
-  var iPub=col(headers,['publica']),iVR=col(headers,['reels','vídeo','video']),iRot=col(headers,['roteiro']);
-
+  for(var c=range.s.c;c<=range.e.c;c++){var cell=sheet[XLSX.utils.encode_cell({r:hr,c:c})];headers.push(cell?norm(String(cell.v)):'');}
+  var iEsc=colIdx(headers,['escopo']),iSit=colIdx(headers,['situa']),iChave=colIdx(headers,['chave']);
+  var iPrazo=colIdx(headers,['prazo','1ª entrega','primeira entrega','entrega']);
+  var iPub=colIdx(headers,['publica']),iVR=colIdx(headers,['reels','vídeo','video']),iRot=colIdx(headers,['roteiro']);
   var results=[];
   for(var r=hr+1;r<=range.e.r;r++){
-    var gc=function(ci){
-      if(ci<0)return null;
-      var cell=sheet[XLSX.utils.encode_cell({r:r,c:ci})];
-      return cell?cell.v:null;
-    };
-    var escopoVal=gc(iEsc);
-    if(!escopoVal)continue;
+    var gc=function(ci){if(ci<0)return null;var cell=sheet[XLSX.utils.encode_cell({r:r,c:ci})];return cell?cell.v:null;};
+    var escopoVal=gc(iEsc);if(!escopoVal)continue;
     if(!isVideoMarked(gc(iVR)))continue;
     var chaveVal=String(gc(iChave)||'').trim();
     var chaveCell=iChave>=0?sheet[XLSX.utils.encode_cell({r:r,c:iChave})]:null;
     var chaveLink=(chaveCell&&chaveCell.l&&chaveCell.l.Target)?chaveCell.l.Target:'';
-    results.push({
-      id:'D'+Date.now()+'_'+r,
-      clientId:clientId,
-      escopo:String(escopoVal||'').trim(),
-      situacao:'',
-      prazo:excelDateToISO(gc(iPrazo)),
-      publicacao:excelDateToISO(gc(iPub)),
-      roteiro:'',
-      chave:chaveVal,
-      link:chaveLink,
-    });
+    results.push({id:'D'+Date.now()+'_'+r,clientId:clientId,escopo:String(escopoVal||'').trim(),situacao:'',prazo:excelDateToISO(gc(iPrazo)),publicacao:excelDateToISO(gc(iPub)),roteiro:'',chave:chaveVal,link:chaveLink,obs:''});
   }
   return results;
 }
-
-// Retorna { monthIdx: [demands], ... } agrupado por aba de mês
 function parseWorkbook(wb,clientId){
   var pat=/(janeiro|fevereiro|mar[çc]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|base)/i;
   var byMonth={};
   wb.SheetNames.forEach(function(name){
     if(!pat.test(name))return;
-    var rows=parseSheetRows(wb.Sheets[name],clientId);
-    if(!rows.length)return;
-    var mi=detectMonthFromSheet(name);
-    var key=mi>=0?mi:'base';
+    var rows=parseSheetRows(wb.Sheets[name],clientId);if(!rows.length)return;
+    var mi=detectMonthFromSheet(name);var key=mi>=0?mi:'base';
     if(!byMonth[key])byMonth[key]={name:name,demands:[]};
     byMonth[key].demands=byMonth[key].demands.concat(rows);
   });
   return byMonth;
 }
 
-// Detectar ano da planilha pelo nome das abas
-function detectYearFromWb(wb){
-  var y=null;
-  wb.SheetNames.forEach(function(n){var m=n.match(/20\d\d/);if(m)y=m[0];});
-  return y||new Date().getFullYear();
-}
-
-// ---- Render principal ----
+// ---- Render ----
 function renderMonthTabs(){
-  var wrap=document.getElementById('month-tabs-wrap');
-  wrap.innerHTML='';
-  if(!state.monthOrder.length){
-    wrap.innerHTML='<span style="font-size:13px;color:rgba(255,255,255,0.3);padding:14px 0;">Nenhum mês cadastrado — clique em + para começar</span>';
-  }
+  var wrap=document.getElementById('month-tabs-wrap');wrap.innerHTML='';
+  if(!state.monthOrder.length){wrap.innerHTML='<span style="font-size:13px;color:var(--text3);padding:14px 0;">Nenhum mês — clique em + para começar</span>';}
   state.monthOrder.forEach(function(mid){
     var m=state.months[mid];
     var btn=document.createElement('button');
     btn.className='month-tab'+(mid===activeMonth?' active':'');
-    btn.textContent=m.name;
+    var count=(m.demands||[]).length;
+    btn.textContent=m.name+(count?' ('+count+')':'');
     btn.onclick=(function(id){return function(){setActiveMonth(id);};})(mid);
     wrap.appendChild(btn);
   });
-  var add=document.createElement('button');
-  add.className='month-tab-add';
-  add.textContent='+ mês';
+  var add=document.createElement('button');add.className='month-tab-add';add.textContent='+ mês';
   add.onclick=function(){openModal('modal-month');setTimeout(function(){document.getElementById('new-month-name').focus();},80);};
   wrap.appendChild(add);
 }
@@ -566,93 +781,113 @@ function renderMonthTabs(){
 function renderMonthView(){
   var view=document.getElementById('month-view');
   if(!activeMonth||!state.months[activeMonth]){
-    view.innerHTML='<div class="container"><div class="empty-month"><p>Selecione ou crie um mês para começar.</p></div></div>';
-    return;
-  }
-  var demands=monthDemands();
-  if(!demands.length){
-    view.innerHTML='<div class="container">'
-      +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;justify-content:flex-end;">'
-      +'<label style="cursor:pointer;"><span class="btn">↑ importar Excel</span><input type="file" accept=".xlsx,.xls" id="file-in" style="display:none;"></label>'
-      +'<button class="btn btn-primary" onclick="openAddDemand()">+ demanda</button>'
-      +'<button class="btn" onclick="openManageClients()">⚙ clientes</button>'
-      +'<button class="btn btn-danger" onclick="deleteMonth()">🗑 mês</button>'
-      +'</div>'
-      +'<div id="alert-area"></div>'
-      +'<div class="empty-month"><p>Nenhuma demanda neste mês.</p><p style="font-size:12px;color:var(--text3);">Importe um Excel ou adicione manualmente.</p></div>'
-      +'</div>';
-    bindFileInput();
-    return;
+    view.innerHTML='<div class="container"><div style="text-align:center;padding:4rem;color:var(--text2);">Selecione ou crie um mês.</div></div>';return;
   }
 
-  // Métricas
-  var all=filterByClient(demands);
-  var late=0,today=0,ok=0,done=0;
-  all.forEach(function(d){var s=getStatus(d.prazo,d.situacao);if(s.label==='concluído')done++;else if(s.label==='atrasado')late++;else if(s.label==='hoje')today++;else if(s.label==='no prazo')ok++;});
+  var demands=monthDemands();
+  var gravacoes=monthGravacoes();
+  var visD=visibleDemands(demands);
+
+  // métricas
+  var total=demands.length,late=0,today=0,ok=0,done=0;
+  demands.forEach(function(d){var s=getStatus(d.prazo,d.situacao);if(s.label==='concluído')done++;else if(s.label==='atrasado')late++;else if(s.label==='hoje')today++;else if(s.label==='no prazo')ok++;});
+  var gravReal=gravacoes.filter(function(g){return g.status==='Realizada';}).length;
+  var gravPend=gravacoes.filter(function(g){return g.status==='Pendente';}).length;
+  var gravAgend=gravacoes.filter(function(g){return g.status==='Agendada';}).length;
+  var gravTotal=gravacoes.filter(function(g){return g.status!=='Não incluso';}).length;
+  var pct=total>0?Math.round((done/total)*100):0;
 
   var html='<div class="container">';
 
   // Métricas
-  html+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:1.25rem;">'
-    +'<div class="metric"><p class="lbl">Total</p><p class="val">'+demands.length+'</p></div>'
-    +'<div class="metric"><p class="lbl">Atrasados</p><p class="val" style="color:var(--danger-text)">'+late+'</p></div>'
-    +'<div class="metric"><p class="lbl">Hoje</p><p class="val" style="color:var(--info-text)">'+today+'</p></div>'
-    +'<div class="metric"><p class="lbl">No prazo</p><p class="val" style="color:var(--success-text)">'+ok+'</p></div>'
-    +'<div class="metric"><p class="lbl">Concluídos</p><p class="val" style="color:#1a4fa3">'+done+'</p></div>'
+  html+='<div style="margin-bottom:1rem;" id="metrics-block">';
+  // Gravações
+  html+='<p style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Gravações</p>';
+  html+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:12px;">';
+  html+='<div class="metric metric-neutral'+(viewMode==="gravacoes"&&gravacaoFilter==="todos"?' metric-active':'')+' mcard" data-mode="gravacoes" data-filter="todos" style="cursor:pointer;"><p class="lbl">Total</p><p class="val">'+gravTotal+'</p></div>';
+  html+='<div class="metric metric-ok'+(viewMode==="gravacoes"&&gravacaoFilter==="realizada"?' metric-active':'')+' mcard" data-mode="gravacoes" data-filter="realizada" style="cursor:pointer;"><p class="lbl">Realizadas</p><p class="val" style="color:var(--success-text)">'+gravReal+'</p></div>';
+  html+='<div class="metric metric-today'+(viewMode==="gravacoes"&&gravacaoFilter==="agendada"?' metric-active':'')+' mcard" data-mode="gravacoes" data-filter="agendada" style="cursor:pointer;"><p class="lbl">Agendadas</p><p class="val" style="color:var(--info-text)">'+gravAgend+'</p></div>';
+  html+='<div class="metric metric-warn'+(viewMode==="gravacoes"&&gravacaoFilter==="pendente"?' metric-active':'')+' mcard" data-mode="gravacoes" data-filter="pendente" style="cursor:pointer;"><p class="lbl">Pendentes</p><p class="val" style="color:var(--warn-text)">'+gravPend+'</p></div>';
+  html+='</div>';
+  // Vídeos
+  html+='<p style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Vídeos</p>';
+  html+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;">';
+  html+='<div class="metric metric-neutral'+(viewMode==="videos"&&activePrazoFilter==="todos"?' metric-active':'')+' mcard" data-mode="videos" data-filter="todos" style="cursor:pointer;"><p class="lbl">Total</p><p class="val">'+total+'</p></div>';
+  html+='<div class="metric metric-late'+(viewMode==="videos"&&activePrazoFilter==="atrasado"?' metric-active':'')+' mcard" data-mode="videos" data-filter="atrasado" style="cursor:pointer;"><p class="lbl">Atrasados</p><p class="val" style="color:var(--danger-text)">'+late+'</p></div>';
+  html+='<div class="metric metric-today'+(viewMode==="videos"&&activePrazoFilter==="hoje"?' metric-active':'')+' mcard" data-mode="videos" data-filter="hoje" style="cursor:pointer;"><p class="lbl">Hoje</p><p class="val" style="color:var(--info-text)">'+today+'</p></div>';
+  html+='<div class="metric metric-ok'+(viewMode==="videos"&&activePrazoFilter==="ok"?' metric-active':'')+' mcard" data-mode="videos" data-filter="ok" style="cursor:pointer;"><p class="lbl">No prazo</p><p class="val" style="color:var(--success-text)">'+ok+'</p></div>';
+  html+='<div class="metric metric-done'+(viewMode==="videos"&&activePrazoFilter==="concluido"?' metric-active':'')+' mcard" data-mode="videos" data-filter="concluido" style="cursor:pointer;"><p class="lbl">Concluídos</p><p class="val" style="color:#1a4fa3">'+done+'</p></div>';
+  html+='</div>';
+  html+='</div>';
+
+  // Progresso do mês
+  html+='<div class="progress-wrap">'
+    +'<div class="progress-label"><span>Progresso do mês</span><strong>'+done+' de '+total+' concluídos ('+pct+'%)</strong></div>'
+    +'<div class="progress-bar-bg"><div class="progress-bar-fill" id="prog-bar" style="width:0%"></div></div>'
     +'</div>';
 
-  // Filtros
-  html+='<div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:1rem;flex-wrap:wrap;">';
-  // Clientes
-  html+='<div style="flex:1;min-width:180px;"><div style="font-size:11px;color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em;">Cliente</div>'
-    +'<div style="display:flex;gap:4px;flex-wrap:wrap;" id="client-chips">'
-    +'<button class="chip'+(activeClientFilter==='todos'?' active':'')+'" onclick="setClientFilter(\'todos\')">Todos</button>';
-  state.order.forEach(function(id){
-    var c=state.clients[id];
-    html+='<button class="chip'+(activeClientFilter===id?' active':'')+'" onclick="setClientFilter(\''+id+'\')"><span class="client-dot" style="background:'+c.color+'"></span>'+esc(c.name)+'</button>';
-  });
-  html+='</div></div>';
-  // Prazo
-  html+='<div><div style="font-size:11px;color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em;">Prazo</div>'
-    +'<div style="display:flex;gap:4px;flex-wrap:wrap;">'
-    +'<button class="chip'+(activePrazoFilter==='todos'?' active':'')+'" onclick="setPrazoFilter(\'todos\')">Todos</button>'
-    +'<button class="chip'+(activePrazoFilter==='atrasado'?' active':'')+'" onclick="setPrazoFilter(\'atrasado\')">Atrasados</button>'
-    +'<button class="chip'+(activePrazoFilter==='hoje'?' active':'')+'" onclick="setPrazoFilter(\'hoje\')">Hoje</button>'
-    +'<button class="chip'+(activePrazoFilter==='ok'?' active':'')+'" onclick="setPrazoFilter(\'ok\')">No prazo</button>'
-    +'<button class="chip'+(activePrazoFilter==='concluido'?' active':'')+'" onclick="setPrazoFilter(\'concluido\')">Concluídos</button>'
-    +'</div></div>';
-  // Ações
-  html+='<div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end;">'
-    +'<label style="cursor:pointer;"><span class="btn">↑ importar Excel</span><input type="file" accept=".xlsx,.xls" id="file-in" style="display:none;"></label>'
-    +'<button class="btn btn-primary" onclick="openAddDemand()">+ demanda</button>'
-    +'<button class="btn" onclick="openManageClients()">⚙ clientes</button>'
-    +'<button class="btn btn-danger" onclick="deleteMonth()">🗑 mês</button>'
-    +'</div>';
-  html+='</div>';
   html+='<div id="alert-area"></div>';
 
+  // Layout sidebar + conteudo
+  html+='<div style="display:flex;gap:16px;align-items:flex-start;">';
+
+  // Sidebar clientes
+  html+='<div style="width:120px;flex-shrink:0;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:10px;position:sticky;top:16px;">';
+  html+='<p style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Cliente</p>';
+  html+='<div style="display:flex;flex-direction:column;gap:3px;" id="client-chips">';
+  html+='<button class="chip'+(activeClientFilter==='todos'?' active':'')+' " onclick="setClientFilter(\'todos\')" style="text-align:left;border-radius:6px;justify-content:flex-start;">Todos</button>';
+  state.order.forEach(function(id){var c=state.clients[id];html+='<button class="chip'+(activeClientFilter===id?' active':'')+' " onclick="setClientFilter(\''+id+'\')" style="text-align:left;border-radius:6px;justify-content:flex-start;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;"><span class="client-dot" style="background:'+c.color+'"></span>'+esc(c.name)+'</button>';});
+  html+='</div></div>';
+
+  // Conteudo direito
+  html+='<div style="flex:1;min-width:0;">';
+
+  // Acoes + filtro prazo
+  html+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:1rem;">';
+  html+='<div style="display:flex;gap:4px;flex-wrap:wrap;flex:1;">';
+  html+='<button class="chip'+(activePrazoFilter==='todos'?' active':'')+' " onclick="setPrazoFilter(\'todos\')">Todos</button>';
+  html+='<button class="chip'+(activePrazoFilter==='atrasado'?' active':'')+' " onclick="setPrazoFilter(\'atrasado\')">Atrasados</button>';
+  html+='<button class="chip'+(activePrazoFilter==='hoje'?' active':'')+' " onclick="setPrazoFilter(\'hoje\')">Hoje</button>';
+  html+='<button class="chip'+(activePrazoFilter==='ok'?' active':'')+' " onclick="setPrazoFilter(\'ok\')">No prazo</button>';
+  html+='<button class="chip'+(activePrazoFilter==='concluido'?' active':'')+' " onclick="setPrazoFilter(\'concluido\')">Concluídos</button>';
+  html+='</div>';
+  html+='<div style="display:flex;gap:6px;flex-wrap:wrap;">';
+  html+='<button class="btn" onclick="openGravacoes()">gravações</button>';
+  html+='<label style="cursor:pointer;"><span class="btn">↑ importar Excel</span><input type="file" accept=".xlsx,.xls" id="file-in" style="display:none;"></label>';
+  html+='<button class="btn btn-primary" onclick="openAddDemand()">+ demanda</button>';
+  html+='<button class="btn" onclick="openManageClients()">⚙ clientes</button>';
+  html+='<button class="btn btn-danger" onclick="deleteMonth()">🗑 mês</button>';
+  html+='</div></div>';
+
   // Tabela
-  var rows=visibleDemands(demands);
-  html+='<div class="card"><div style="overflow-x:auto;"><table class="dem-table"><thead><tr>'
-    +'<th onclick="doSort(\'cliente\')" style="min-width:100px;">Cliente <span id="sort-cliente"></span></th>'
-    +'<th onclick="doSort(\'escopo\')" style="min-width:80px;">Escopo <span id="sort-escopo"></span></th>'
-    +'<th onclick="doSort(\'situacao\')" style="min-width:110px;">Situação <span id="sort-situacao"></span></th>'
-    +'<th onclick="doSort(\'prazo\')" style="min-width:120px;">1ª entrega <span id="sort-prazo"></span></th>'
-    +'<th onclick="doSort(\'publicacao\')" style="min-width:120px;">Publicação <span id="sort-publicacao"></span></th>'
-    +'<th onclick="doSort(\'roteiro\')" style="min-width:110px;">Roteiro <span id="sort-roteiro"></span></th>'
-    +'<th style="min-width:80px;">Chave</th>'
-    +'<th onclick="doSort(\'status\')" style="min-width:80px;">Status <span id="sort-status"></span></th>'
-    +'<th style="width:36px;"></th>'
-    +'</tr></thead><tbody id="tbody"></tbody></table></div>'
+  var tableHtml = viewMode === 'gravacoes'
+    ? '<th style="min-width:140px;">Cliente</th><th onclick="doSort(\'data\')" style="min-width:120px;">Data <span id="sort-data"></span></th><th style="min-width:130px;">Situação</th><th style="width:36px;"></th>'
+    : '<th onclick="doSort(\'cliente\')" style="min-width:110px;">Cliente <span id="sort-cliente"></span></th><th onclick="doSort(\'escopo\')" style="min-width:80px;">Escopo <span id="sort-escopo"></span></th><th onclick="doSort(\'situacao\')" style="min-width:110px;">Situação <span id="sort-situacao"></span></th><th onclick="doSort(\'prazo\')" style="min-width:120px;">1ª entrega <span id="sort-prazo"></span></th><th onclick="doSort(\'publicacao\')" style="min-width:120px;">Publicação <span id="sort-publicacao"></span></th><th onclick="doSort(\'roteiro\')" style="min-width:110px;">Roteiro <span id="sort-roteiro"></span></th><th style="min-width:80px;">Chave</th><th onclick="doSort(\'status\')" style="min-width:90px;">Status <span id="sort-status"></span></th><th style="width:36px;"></th>';
+  html+='<div class="card"><div style="overflow-x:auto;"><table class="dem-table"><thead><tr>'+tableHtml+'</tr></thead><tbody id="tbody"></tbody></table></div>'
     +'<div id="empty-msg" style="display:none;text-align:center;padding:2.5rem;font-size:13px;color:var(--text2);">Nenhuma demanda encontrada.</div>'
     +'</div>'
     +'<p class="row-count" id="row-count"></p>';
-  html+='</div>';
+
+  html+='</div>'; // fim conteudo direito
+  html+='</div>'; // fim layout sidebar
+  html+='</div>'; // fim container
   view.innerHTML=html;
 
-  renderTableRows(rows);
+  if(viewMode === 'gravacoes'){
+    renderGravTable();
+  } else {
+    renderTableRows(visD);
+  }
   bindFileInput();
   updateSortIcons();
+  // Animar barra de progresso
+  setTimeout(function(){
+    var bar=document.getElementById('prog-bar');
+    if(bar) bar.style.width=pct+'%';
+  }, 60);
+  // Animar métricas só ao chamar renderMonthView (troca de mês/reload)
+  var mb=document.getElementById('metrics-block');
+  if(mb){ mb.classList.add('do-animate'); setTimeout(function(){ mb.classList.remove('do-animate'); },400); }
 }
 
 function filterByClient(demands){
@@ -690,8 +925,12 @@ function renderTableRows(rows){
   rows.forEach(function(row){
     var st=getStatus(row.prazo,row.situacao);
     var link=row.link||jiraLink(row.chave);
-    var sitOpts=['','Pendente','Entregue'].map(function(o){return'<option value="'+o+'"'+(row.situacao===o?' selected':'')+'>'+( o||'—')+'</option>';}).join('');
+    var sitOpts=['','Pendente','Em alocação','Entregue'].map(function(o){return'<option value="'+o+'"'+(row.situacao===o?' selected':'')+'>'+( o||'—')+'</option>';}).join('');
     var rotOpts=['','Pendente','Entregue'].map(function(o){return'<option value="'+o+'"'+(row.roteiro===o?' selected':'')+'>'+( o||'—')+'</option>';}).join('');
+    // Badge de status com tooltip de observação
+    var obsAttr=row.obs?(' data-obs="'+esc(row.obs)+'"'):'';
+    var obsDot=row.obs?'<span class="obs-dot"></span>':'';
+    var badgeHtml='<span class="badge '+st.cls+(row.obs?' badge-obs':'')+'"'+obsAttr+' onclick="openObs(\''+row.id+'\')" title="'+(row.obs?'Ver/editar observação':'Adicionar observação')+'" style="cursor:pointer;">'+st.label+obsDot+'</span>';
     var tr=document.createElement('tr');
     tr.innerHTML=
       '<td><span style="display:inline-flex;align-items:center;"><span class="client-dot" style="background:'+clientColor(row.clientId)+'"></span><span style="font-size:12px;">'+esc(clientName(row.clientId))+'</span></span></td>'+
@@ -700,9 +939,9 @@ function renderTableRows(rows){
       '<td><input type="date" value="'+(row.prazo||'')+'" data-id="'+row.id+'" data-field="prazo"></td>'+
       '<td><input type="date" value="'+(row.publicacao||'')+'" data-id="'+row.id+'" data-field="publicacao"></td>'+
       '<td><select class="inline-select" data-id="'+row.id+'" data-field="roteiro">'+rotOpts+'</select></td>'+
-      '<td>'+(link?'<a href="'+esc(link)+'" target="_blank" rel="noopener" style="color:var(--info-text);font-size:12px;text-decoration:none;">'+esc(row.chave||'abrir')+'</a>':'<span class="editable" contenteditable="true" data-id="'+row.id+'" data-field="chave">'+esc(row.chave||'—')+'</span>')+'</td>'+
-      '<td><span class="badge '+st.cls+'">'+st.label+'</span></td>'+
-      '<td><button class="btn btn-danger" style="padding:2px 7px;font-size:11px;border-radius:4px;" data-del="'+row.id+'">✕</button></td>';
+      '<td><span style="display:inline-flex;align-items:center;gap:5px;">'+(link?'<a href="'+esc(link)+'" target="_blank" rel="noopener" style="color:var(--info-text);font-size:12px;text-decoration:none;">'+esc(row.chave||'abrir')+'</a><span class="copy-link-icon" data-copy-link="'+esc(link)+'" title="Copiar link" style="cursor:pointer;font-size:12px;opacity:0.6;">🔗</span>':'<span class="editable" contenteditable="true" data-id="'+row.id+'" data-field="chave">'+esc(row.chave||'—')+'</span>')+'</span></td>'+
+      '<td>'+badgeHtml+'</td>'+
+      '<td><button class="btn btn-danger row-del-btn" style="padding:2px 7px;font-size:11px;border-radius:4px;opacity:0;transition:opacity .15s;" data-del="'+row.id+'">✕</button></td>';
     tbody.appendChild(tr);
   });
   if(rc)rc.textContent=rows.length+' demanda'+(rows.length!==1?'s':'');
@@ -718,7 +957,7 @@ function updateSortIcons(){
 
 function renderAll(){renderMonthTabs();renderMonthView();}
 
-// ---- Eventos da tabela (delegação) ----
+// ---- Eventos tabela ----
 document.addEventListener('blur',function(e){
   var el=e.target;
   if(!el.classList.contains('editable')||!el.dataset.id)return;
@@ -728,67 +967,251 @@ document.addEventListener('blur',function(e){
 
 document.addEventListener('change',function(e){
   var el=e.target;
+  // Gravação status inline
+  if(el.dataset.gravIdx!==undefined&&el.dataset.gravIdx!==''){
+    var idx=parseInt(el.dataset.gravIdx);
+    if(state.months[activeMonth]&&state.months[activeMonth].gravacoes[idx]){
+      state.months[activeMonth].gravacoes[idx].status=el.value;
+      save();renderMonthView();
+    }
+    return;
+  }
   if(!el.dataset.id||!el.dataset.field)return;
   var d=findDemand(el.dataset.id);
   if(d){
     d[el.dataset.field]=el.value;save();
-    if(el.type==='date'||el.dataset.field==='situacao'){
-      renderTableRows(visibleDemands(monthDemands()));
-    }
+    if(el.type==='date'||el.dataset.field==='situacao'){renderTableRows(visibleDemands(monthDemands()));}
   }
 });
 
 document.addEventListener('click',function(e){
+  // Copiar link da chave
+  var copyIcon=e.target.closest('[data-copy-link]');
+  if(copyIcon){
+    var linkToCopy=copyIcon.dataset.copyLink;
+    navigator.clipboard.writeText(linkToCopy).then(function(){
+      var original=copyIcon.textContent;
+      copyIcon.textContent='✓';
+      copyIcon.style.opacity='1';
+      setTimeout(function(){copyIcon.textContent=original;copyIcon.style.opacity='0.6';},1200);
+    }).catch(function(){
+      alert('Link: '+linkToCopy);
+    });
+    return;
+  }
+  // Clique nos cards de métrica
+  var card=e.target.closest('.mcard');
+  if(card){
+    setViewMode(card.dataset.mode, card.dataset.filter);
+    return;
+  }
+  // Deletar gravação no tbody
+  var btnGrav=e.target.closest('[data-del-grav]');
+  if(btnGrav&&activeMonth){
+    if(!confirm('Excluir esta gravação?'))return;
+    var idx=parseInt(btnGrav.dataset.delGrav);
+    state.months[activeMonth].gravacoes.splice(idx,1);
+    save();renderMonthView();return;
+  }
   var btn=e.target.closest('[data-del]');
   if(!btn||!activeMonth)return;
+  if(!confirm('Excluir esta demanda?'))return;
   state.months[activeMonth].demands=state.months[activeMonth].demands.filter(function(r){return r.id!==btn.dataset.del;});
   save();renderAll();
 });
+
+function renderGravTable(){
+  var tbody=document.getElementById('tbody');
+  var empty=document.getElementById('empty-msg');
+  var rc=document.getElementById('row-count');
+  if(!tbody)return;
+  var gravs=monthGravacoes().filter(function(g){
+    if(activeClientFilter!=='todos'&&g.clientId!==activeClientFilter)return false;
+    if(gravacaoFilter!=='todos'&&g.status.toLowerCase()!==gravacaoFilter)return false;
+    return g.status!=='Não incluso'||gravacaoFilter==='todos';
+  });
+  gravs.sort(function(a,b){return(a.data||'').localeCompare(b.data||'');});
+  tbody.innerHTML='';
+  if(!gravs.length){if(empty)empty.style.display='';if(rc)rc.textContent='';return;}
+  if(empty)empty.style.display='none';
+  gravs.forEach(function(g,i){
+    var stCls=g.status==='Realizada'?'rec-realizada':g.status==='Agendada'?'rec-agendada':g.status==='Não incluso'?'rec-nao-incluso':'rec-pendente';
+    var opts=['Agendada','Pendente','Realizada','Não incluso'].map(function(o){
+      return'<option value="'+o+'"'+(g.status===o?' selected':'')+'>'+o+'</option>';
+    }).join('');
+    var idx=monthGravacoes().indexOf(g);
+    var tr=document.createElement('tr');
+    tr.innerHTML=
+      '<td><span style="display:inline-flex;align-items:center;"><span class="client-dot" style="background:'+clientColor(g.clientId)+'"></span><span style="font-size:12px;">'+esc(clientName(g.clientId))+'</span></span></td>'+
+      '<td><input type="date" value="'+(g.data||'')+'" data-grav-date="'+idx+'" style="font-size:12px;border:0.5px solid transparent;border-radius:4px;background:transparent;color:var(--text);cursor:pointer;font-family:inherit;padding:2px 4px;"></td>'+
+      '<td><select class="inline-select" data-grav-idx="'+idx+'">'+opts+'</select></td>'+
+      '<td><button class="btn btn-danger row-del-btn" style="padding:2px 7px;font-size:11px;border-radius:4px;opacity:0;transition:opacity .15s;" data-del-grav="'+idx+'">✕</button></td>';
+    tbody.appendChild(tr);
+  });
+  if(rc)rc.textContent=gravs.length+' gravação'+(gravs.length!==1?'ões':'');
+
+  // Eventos inline para data de gravação
+  tbody.querySelectorAll('[data-grav-date]').forEach(function(el){
+    el.addEventListener('change',function(){
+      var idx=parseInt(el.dataset.gravDate);
+      if(!state.months[activeMonth])return;
+      state.months[activeMonth].gravacoes[idx].data=el.value;
+      save();
+    });
+  });
+}
 
 function findDemand(id){
   if(!activeMonth||!state.months[activeMonth])return null;
   return state.months[activeMonth].demands.find(function(r){return r.id===id;})||null;
 }
 
-// ---- Filtros ----
-function setClientFilter(val){
-  activeClientFilter=val;
-  renderAll();
+// ---- Observações ----
+function openObs(id){
+  var d=findDemand(id);if(!d)return;
+  obsEditingId=id;
+  document.getElementById('obs-demand-label').textContent=esc(d.escopo||'Demanda');
+  document.getElementById('obs-text').value=d.obs||'';
+  openModal('modal-obs');
+  setTimeout(function(){document.getElementById('obs-text').focus();},80);
 }
-function setPrazoFilter(val){
-  activePrazoFilter=val;
-  renderAll();
-}
-function doSort(f){
-  if(sortField===f)sortDir*=-1;else{sortField=f;sortDir=1;}
+function confirmObs(){
+  if(!obsEditingId)return;
+  var d=findDemand(obsEditingId);
+  if(d){d.obs=document.getElementById('obs-text').value.trim();save();}
+  closeModal('modal-obs');
   renderTableRows(visibleDemands(monthDemands()));
 }
 
+// ---- Gravações ----
+function openGravacoes(){
+  if(!activeMonth){alert('Selecione um mês primeiro.');return;}
+  document.getElementById('modal-grav-title').textContent='Gravações — '+state.months[activeMonth].name;
+  populateClientSelect('ng-cliente');
+  renderGravacoesList();
+  openModal('modal-gravacoes');
+}
+function renderGravacoesList(){
+  var list=document.getElementById('gravacoes-list');
+  var gravs=monthGravacoes();
+  if(!gravs.length){list.innerHTML='<p style="font-size:13px;color:var(--text3);text-align:center;padding:1rem;">Nenhuma gravação cadastrada.</p>';return;}
+  list.innerHTML='';
+  gravs.forEach(function(g,i){
+    var row=document.createElement('div');row.className='rec-row';
+    var stCls=g.status==='Realizada'?'rec-realizada':'rec-pendente';
+    row.innerHTML='<span class="client-dot" style="background:'+clientColor(g.clientId)+';width:10px;height:10px;"></span>'
+      +'<span class="rec-client">'+esc(clientName(g.clientId))+'</span>'
+      +'<span class="rec-date">'+fmtDate(g.data)+'</span>'
+      +'<select style="font-size:12px;border:0.5px solid var(--border2);border-radius:4px;background:var(--bg);color:var(--text);font-family:inherit;padding:2px 6px;cursor:pointer;" data-grav-idx="'+i+'">'
+      +'<option value="Agendada"'+(g.status==='Agendada'?' selected':'')+'>Agendada</option>'
+      +'<option value="Pendente"'+(g.status==='Pendente'?' selected':'')+'>Pendente</option>'
+      +'<option value="Realizada"'+(g.status==='Realizada'?' selected':'')+'>Realizada</option>'
+      +'<option value="Não incluso"'+(g.status==='Não incluso'?' selected':'')+'>Não incluso</option>'
+      +'</select>'
+      +'<button class="btn btn-danger" style="padding:2px 7px;font-size:11px;border-radius:4px;" data-del-grav="'+i+'">✕</button>';
+    list.appendChild(row);
+  });
+}
+function addGravacao(){
+  if(!activeMonth)return;
+  var cid=document.getElementById('ng-cliente').value;
+  var data=document.getElementById('ng-data').value;
+  var status=document.getElementById('ng-status').value;
+  if(!cid||!data){alert('Selecione o cliente e a data.');return;}
+  if(!state.months[activeMonth].gravacoes)state.months[activeMonth].gravacoes=[];
+  state.months[activeMonth].gravacoes.push({id:'G'+Date.now(),clientId:cid,data:data,status:status});
+  save();renderGravacoesList();renderAll();
+}
+document.getElementById('gravacoes-list').addEventListener('change',function(e){
+  var sel=e.target;if(!sel.dataset.gravIdx)return;
+  var idx=parseInt(sel.dataset.gravIdx);
+  if(!state.months[activeMonth]||!state.months[activeMonth].gravacoes)return;
+  state.months[activeMonth].gravacoes[idx].status=sel.value;
+  save();renderGravacoesList();renderAll();
+});
+document.getElementById('gravacoes-list').addEventListener('click',function(e){
+  var btn=e.target.closest('[data-del-grav]');if(!btn)return;
+  var idx=parseInt(btn.dataset.delGrav);
+  if(!confirm('Excluir esta gravação?'))return;
+  state.months[activeMonth].gravacoes.splice(idx,1);
+  save();renderGravacoesList();renderAll();
+});
+
+// ---- Filtros ----
+function setViewMode(mode, filter){
+  viewMode = mode;
+  if(mode === 'videos'){
+    activePrazoFilter = filter;
+    gravacaoFilter = 'todos';
+  } else {
+    gravacaoFilter = filter;
+    activePrazoFilter = 'todos';
+  }
+  // Atualizar cards ativos sem recriar métricas
+  document.querySelectorAll('.mcard').forEach(function(c){
+    var isActive = c.dataset.mode === mode && c.dataset.filter === filter;
+    c.classList.toggle('metric-active', isActive);
+  });
+  // Atualizar cabeçalho da tabela de acordo com o modo
+  var thead = document.querySelector('.dem-table thead tr');
+  if(thead){
+    thead.innerHTML = viewMode === 'gravacoes'
+      ? '<th style="min-width:140px;">Cliente</th><th onclick="doSort(\'data\')" style="min-width:120px;">Data <span id="sort-data"></span></th><th style="min-width:130px;">Situação</th><th style="width:36px;"></th>'
+      : '<th onclick="doSort(\'cliente\')" style="min-width:110px;">Cliente <span id="sort-cliente"></span></th><th onclick="doSort(\'escopo\')" style="min-width:80px;">Escopo <span id="sort-escopo"></span></th><th onclick="doSort(\'situacao\')" style="min-width:110px;">Situação <span id="sort-situacao"></span></th><th onclick="doSort(\'prazo\')" style="min-width:120px;">1ª entrega <span id="sort-prazo"></span></th><th onclick="doSort(\'publicacao\')" style="min-width:120px;">Publicação <span id="sort-publicacao"></span></th><th onclick="doSort(\'roteiro\')" style="min-width:110px;">Roteiro <span id="sort-roteiro"></span></th><th style="min-width:80px;">Chave</th><th onclick="doSort(\'status\')" style="min-width:90px;">Status <span id="sort-status"></span></th><th style="width:36px;"></th>';
+  }
+  // Só atualizar tabela
+  if(viewMode === 'gravacoes'){
+    renderGravTable();
+  } else {
+    renderTableRows(visibleDemands(monthDemands()));
+  }
+  updateSortIcons();
+}
+
+function setClientFilter(val){
+  activeClientFilter=val;
+  // Atualizar chips ativos sem recriar tudo
+  document.querySelectorAll('#client-chips button').forEach(function(b){
+    b.classList.toggle('active', b.getAttribute('onclick').includes("'"+val+"'") || (val==='todos' && b.getAttribute('onclick').includes("'todos'")));
+  });
+  renderTableRows(visibleDemands(monthDemands()));
+}
+function setPrazoFilter(val){
+  activePrazoFilter=val;
+  document.querySelectorAll('[onclick^="setPrazoFilter"]').forEach(function(b){
+    var bval=b.getAttribute('onclick').replace("setPrazoFilter('","").replace("')","");
+    b.classList.toggle('active', bval===val);
+  });
+  renderTableRows(visibleDemands(monthDemands()));
+}
+function doSort(f){if(sortField===f)sortDir*=-1;else{sortField=f;sortDir=1;}renderTableRows(visibleDemands(monthDemands()));}
+
 // ---- Meses ----
-function setActiveMonth(id){
-  activeMonth=id;
-  activeClientFilter='todos';
-  activePrazoFilter='todos';
-  renderAll();
-}
-
+function setActiveMonth(id){activeMonth=id;activeClientFilter='todos';activePrazoFilter='todos';renderAll();}
 function confirmAddMonth(){
-  var name=document.getElementById('new-month-name').value.trim();
-  if(!name)return;
+  var name=document.getElementById('new-month-name').value.trim();if(!name)return;
   var id='m_'+Date.now();
-  state.months[id]={name:name,demands:[]};
+  // Auto-popular gravações: dia 15 para cada cliente
+  var gravacoes=state.order.map(function(cid){
+    // Tentar extrair ano/mês do nome (ex: "Junho 2026")
+    var dataGrav='';
+    var mMatch=name.match(/(janeiro|fevereiro|mar[çco]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)/i);
+    var yMatch=name.match(/20\d\d/);
+    var mMap={janeiro:'01',fevereiro:'02','março':'03',marco:'03',abril:'04',maio:'05',junho:'06',julho:'07',agosto:'08',setembro:'09',outubro:'10',novembro:'11',dezembro:'12'};
+    if(mMatch&&yMatch){
+      var mNum=mMap[mMatch[0].toLowerCase()]||'01';
+      dataGrav=yMatch[0]+'-'+mNum+'-15';
+    }
+    return {id:'G'+Date.now()+'_'+cid,clientId:cid,data:dataGrav,status:'Agendada'};
+  });
+  state.months[id]={name:name,demands:[],gravacoes:gravacoes};
   state.monthOrder.push(id);
-  closeModal('modal-month');
-  document.getElementById('new-month-name').value='';
-  activeMonth=id;
-  save();renderAll();
+  closeModal('modal-month');document.getElementById('new-month-name').value='';
+  activeMonth=id;save();renderAll();
 }
-
 function deleteMonth(){
   if(!activeMonth)return;
-  var name=state.months[activeMonth].name;
-  var count=state.months[activeMonth].demands.length;
-  if(!confirm('Excluir o mês "'+name+'"'+(count?' e suas '+count+' demandas?':'?')))return;
+  if(!confirm('Excluir o mês "'+state.months[activeMonth].name+'" e todos os dados?'))return;
   delete state.months[activeMonth];
   state.monthOrder=state.monthOrder.filter(function(id){return id!==activeMonth;});
   activeMonth=state.monthOrder[0]||null;
@@ -815,10 +1238,7 @@ document.getElementById('clients-list').addEventListener('click',function(e){
   if(!confirm('Excluir "'+state.clients[id].name+'"?'))return;
   delete state.clients[id];
   state.order=state.order.filter(function(i){return i!==id;});
-  // remover demandas desse cliente em todos os meses
-  state.monthOrder.forEach(function(mid){
-    state.months[mid].demands=state.months[mid].demands.filter(function(d){return d.clientId!==id;});
-  });
+  state.monthOrder.forEach(function(mid){state.months[mid].demands=state.months[mid].demands.filter(function(d){return d.clientId!==id;});});
   if(activeClientFilter===id)activeClientFilter='todos';
   save();renderClientsList();renderAll();
 });
@@ -829,31 +1249,28 @@ function addClient(){
   document.getElementById('new-client-name').value='';
   save();renderClientsList();renderAll();
 }
-
-// ---- Demandas ----
 function populateClientSelect(selId){
-  var sel=document.getElementById(selId);if(!sel)return;
-  sel.innerHTML='';
+  var sel=document.getElementById(selId);if(!sel)return;sel.innerHTML='';
   state.order.forEach(function(id){
     var opt=document.createElement('option');opt.value=id;opt.textContent=state.clients[id].name;
     if(activeClientFilter!=='todos'&&id===activeClientFilter)opt.selected=true;
     sel.appendChild(opt);
   });
 }
+
+// ---- Demandas ----
 function openAddDemand(){
   if(!state.order.length){alert('Cadastre pelo menos um cliente primeiro.');return;}
   if(!activeMonth){alert('Selecione um mês primeiro.');return;}
   ['nd-escopo','nd-chave'].forEach(function(i){document.getElementById(i).value='';});
   ['nd-prazo','nd-pub'].forEach(function(i){document.getElementById(i).value='';});
-  document.getElementById('nd-situacao').value='';
-  document.getElementById('nd-roteiro').value='';
+  document.getElementById('nd-situacao').value='';document.getElementById('nd-roteiro').value='';
   populateClientSelect('nd-cliente');
-  openModal('modal-demand');
-  setTimeout(function(){document.getElementById('nd-escopo').focus();},80);
+  openModal('modal-demand');setTimeout(function(){document.getElementById('nd-escopo').focus();},80);
 }
 function confirmDemand(){
   var cid=document.getElementById('nd-cliente').value;if(!cid||!activeMonth)return;
-  var d={
+  state.months[activeMonth].demands.push({
     id:'D'+Date.now(),clientId:cid,
     escopo:document.getElementById('nd-escopo').value.trim(),
     situacao:document.getElementById('nd-situacao').value,
@@ -861,108 +1278,64 @@ function confirmDemand(){
     publicacao:document.getElementById('nd-pub').value,
     roteiro:document.getElementById('nd-roteiro').value,
     chave:document.getElementById('nd-chave').value.trim(),
-    link:'',
-  };
-  state.months[activeMonth].demands.push(d);
+    link:'',obs:'',
+  });
   save();closeModal('modal-demand');renderAll();
 }
 
 // ---- Importação ----
-(function(){
-  var s=document.createElement('script');
-  s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-  s.onerror=function(){window._xlsxFailed=true;};
-  document.head.appendChild(s);
-})();
-
 function bindFileInput(){
-  var fi=document.getElementById('file-in');
-  if(!fi||fi._bound)return;
-  fi._bound=true;
+  var fi=document.getElementById('file-in');if(!fi||fi._bound)return;fi._bound=true;
   fi.addEventListener('change',function(e){
     var file=e.target.files[0];if(!file)return;
-    if(window._xlsxFailed||typeof XLSX==='undefined'){
-      showAlert('Biblioteca ainda carregando. Aguarde e tente novamente.','warn');
-      e.target.value='';return;
-    }
+    if(typeof XLSX==='undefined'){showAlert('Biblioteca ainda carregando. Aguarde e tente novamente.','warn');e.target.value='';return;}
     if(!state.order.length){alert('Cadastre pelo menos um cliente antes de importar.');e.target.value='';return;}
     var reader=new FileReader();
     reader.onload=function(ev){
       try{
         var wb=XLSX.read(ev.target.result,{type:'array',cellDates:false});
-        // contar total de vídeos
-        var total=0,byMonth={};
+        var total=0,sheets=[];
         wb.SheetNames.forEach(function(name){
           var pat=/(janeiro|fevereiro|mar[çc]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|base)/i;
           if(!pat.test(name))return;
           var rows=parseSheetRows(wb.Sheets[name],'__preview__');
-          if(!rows.length)return;
-          var mi=detectMonthFromSheet(name);
-          var key=mi>=0?mi:'base';
-          if(!byMonth[key])byMonth[key]={sheetName:name,count:rows.length};
-          total+=rows.length;
+          if(rows.length){total+=rows.length;sheets.push(name+'('+rows.length+')');}
         });
-        if(!total){
-          showAlert('Nenhum vídeo/reels encontrado. Verifique a coluna "Reels / Vídeo".','warn');
-          e.target.value='';return;
-        }
-        var year=detectYearFromWb(wb);
-        var summary=Object.values(byMonth).map(function(v){return v.sheetName+' ('+v.count+')';}).join(', ');
-        pendingImport={wb:wb,byMonth:byMonth,year:year,total:total,summary:summary};
-        document.getElementById('import-info').textContent=total+' demanda(s) encontrada(s): '+summary;
+        if(!total){showAlert('Nenhum vídeo/reels encontrado. Verifique a coluna "Reels / Vídeo".','warn');e.target.value='';return;}
+        pendingImport={wb:wb,total:total,sheets:sheets};
+        document.getElementById('import-info').textContent=total+' demanda(s) encontrada(s).';
+        document.getElementById('import-detail').textContent='Abas: '+sheets.join(', ');
         populateClientSelect('import-client');
         openModal('modal-import');
       }catch(err){showAlert('Erro ao ler o arquivo: '+err.message,'warn');}
     };
-    reader.readAsArrayBuffer(file);
-    e.target.value='';
+    reader.readAsArrayBuffer(file);e.target.value='';
   });
 }
 
 function confirmImport(){
   if(!pendingImport)return;
   var clientId=document.getElementById('import-client').value;if(!clientId)return;
-
-  var wb=pendingImport.wb;
-  var year=pendingImport.year;
-  var imported=0;
-
-  // Para cada aba de mês no workbook, encontrar ou criar a aba de mês no dashboard
+  var wb=pendingImport.wb,year=detectYearFromWb(wb),imported=0;
   wb.SheetNames.forEach(function(sheetName){
     var pat=/(janeiro|fevereiro|mar[çc]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro|base)/i;
     if(!pat.test(sheetName))return;
-    var rows=parseSheetRows(wb.Sheets[sheetName],clientId);
-    if(!rows.length)return;
-
+    var rows=parseSheetRows(wb.Sheets[sheetName],clientId);if(!rows.length)return;
     var mi=detectMonthFromSheet(sheetName);
-    // Nome amigável: "Junho 2026"
     var monthName=mi>=0?(MONTHS_PT[mi]+' '+year):sheetName;
-
-    // Procurar mês existente com mesmo nome
     var mid=state.monthOrder.find(function(id){return norm(state.months[id].name)===norm(monthName);});
-    if(!mid){
-      // criar novo mês
-      mid='m_'+Date.now()+'_'+mi;
-      state.months[mid]={name:monthName,demands:[]};
-      state.monthOrder.push(mid);
-    }
-    // Remover demandas antigas desse cliente nesse mês e substituir
+    if(!mid){mid='m_'+Date.now()+'_'+mi;state.months[mid]={name:monthName,demands:[],gravacoes:[]};state.monthOrder.push(mid);}
     state.months[mid].demands=state.months[mid].demands.filter(function(d){return d.clientId!==clientId;});
     state.months[mid].demands=state.months[mid].demands.concat(rows);
     imported+=rows.length;
-    // Ativar o primeiro mês importado
     if(!activeMonth)activeMonth=mid;
   });
-
-  pendingImport=null;
-  save();closeModal('modal-import');
-  showAlert(imported+' demandas importadas com sucesso!','info');
-  renderAll();
+  pendingImport=null;save();closeModal('modal-import');
+  showAlert(imported+' demandas importadas!','info');renderAll();
 }
 
 function showAlert(msg,type){
-  var a=document.getElementById('alert-area');
-  if(!a)return;
+  var a=document.getElementById('alert-area');if(!a)return;
   a.innerHTML='<div class="alert alert-'+(type||'info')+'">'+esc(msg)+'</div>';
   setTimeout(function(){if(a)a.innerHTML='';},6000);
 }
@@ -975,10 +1348,7 @@ document.querySelectorAll('.modal-overlay').forEach(function(o){
 });
 
 // ---- Init ----
-load();
-if(state.monthOrder.length)activeMonth=state.monthOrder[0];
-renderAll();
-// Drive init feito via script tag no head
+showWaitScreen();
 </script>
 </body>
 </html>
