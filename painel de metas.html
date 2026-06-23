@@ -389,7 +389,7 @@ function renderBubbles(allDemands) {
   var exX0 = heroRect.left - pad, exX1 = heroRect.right + pad;
   var exY0 = heroRect.top - pad, exY1 = heroRect.bottom + pad;
 
-  var size = pool.length > 40 ? 50 : pool.length > 25 ? 62 : 76;
+  var size = pool.length > 40 ? 68 : pool.length > 25 ? 82 : 98;
 
   // Construir uma grade de candidatos cobrindo TODA a tela (inclusive laterais),
   // remover os que caem dentro do card, embaralhar e usar nessa ordem.
@@ -432,7 +432,7 @@ function renderBubbles(allDemands) {
     el.style.animation = 'bubbleFloat ' + floatDur + 's ease-in-out ' + floatDelay + 's infinite';
     el.style.cursor = 'pointer';
 
-    var fontSize = Math.max(7, thisSize * 0.13);
+    var fontSize = Math.max(9, thisSize * 0.15);
 
     el.innerHTML =
       '<svg width="' + thisSize + '" height="' + thisSize + '" viewBox="0 0 100 100" style="opacity:1;overflow:visible;">' +
