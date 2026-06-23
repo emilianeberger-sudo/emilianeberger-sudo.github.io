@@ -81,6 +81,13 @@
   }
   td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
   tr:hover td{background:var(--panel2);}
+
+  tfoot td{
+    border-bottom:none;border-top:2px solid var(--border);
+    background:var(--panel2);font-weight:600;padding:11px 10px;
+  }
+  tfoot .filtered-total-label{color:var(--muted);font-weight:500;font-size:12px;text-transform:uppercase;letter-spacing:.3px;}
+  tfoot .filtered-total-value{font-size:14px;}
   .src-tag{
     font-size:10px;padding:2px 6px;border-radius:5px;font-weight:600;
     text-transform:uppercase;
@@ -342,6 +349,7 @@
             </tr>
           </thead>
           <tbody id="txTableBody"></tbody>
+          <tfoot id="txTableFoot"></tfoot>
         </table>
       </div>
     </div>
@@ -1455,6 +1463,60 @@ function renderTable(){
       </tr>
     `;
   }).join('') || `<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:30px;">Nenhuma transação encontrada com esses filtros.</td></tr>`;
+
+  // total da seleção filtrada atual: se todos os tipos forem iguais, mostra um único total com sinal certo;
+  // se misturar tipos (gasto + receita, por exemplo), mostra cada tipo somado separadamente, sem cancelar entre si
+  const tfoot = document.getElementById('txTableFoot');
+  if(txs.length === 0){
+    tfoot.innerHTML = '';
+  } else {
+    const tiposPresentes = [...new Set(txs.map(t=>t.type))];
+    const typeLabels = {gasto:'Gasto', receita:'Receita', interna:'Transferência interna', investimento:'Investimento'};
+    const typeSign = {gasto:-1, receita:1, interna:0, investimento:0}; // interna/investimento não têm "lado" natural de saldo
+
+    if(tiposPresentes.length === 1){
+      const tipo = tiposPresentes[0];
+      const total = txs.reduce((s,t)=>s+Math.abs(t.value), 0);
+      const sinal = typeSign[tipo] || (txs[0].value < 0 ? -1 : 1);
+      const totalClass = sinal > 0 ? 'in' : (sinal < 0 ? 'out' : 'neutral');
+      tfoot.innerHTML = `
+        <tr>
+          <td colspan="3"></td>
+          <td class="filtered-total-label">Total filtrado (${txs.length})</td>
+          <td style="text-align:right;" class="amount filtered-total-value ${totalClass}">
+            ${sinal<0?'-':''}${fmt(total)}
+          </td>
+        </tr>
+      `;
+    } else {
+      // Soma por tipo presente no filtro atual
+      const totaisPorTipo = {};
+      txs.forEach(t=>{
+        totaisPorTipo[t.type] = (totaisPorTipo[t.type]||0) + Math.abs(t.value);
+      });
+      const linhasExtras = Object.entries(totaisPorTipo).map(([tipo, total])=>{
+        const sinal = typeSign[tipo] || 0;
+        const totalClass = sinal > 0 ? 'in' : (sinal < 0 ? 'out' : 'neutral');
+        return `
+          <tr>
+            <td colspan="3"></td>
+            <td class="filtered-total-label">${typeLabels[tipo] || tipo}</td>
+            <td style="text-align:right;" class="amount filtered-total-value ${totalClass}">
+              ${sinal<0?'-':''}${fmt(total)}
+            </td>
+          </tr>
+        `;
+      }).join('');
+      tfoot.innerHTML = `
+        <tr>
+          <td colspan="3"></td>
+          <td class="filtered-total-label">Total filtrado (${txs.length}) — por tipo:</td>
+          <td></td>
+        </tr>
+        ${linhasExtras}
+      `;
+    }
+  }
 
   // bind description edit
   tbody.querySelectorAll('.desc-edit-input').forEach(inp=>{
