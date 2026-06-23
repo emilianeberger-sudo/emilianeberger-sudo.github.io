@@ -208,6 +208,7 @@ input[type="date"]:focus{border-color:var(--info-text);background:var(--bg);outl
     <select id="nd-situacao">
       <option value="">—</option>
       <option value="Pendente">Pendente</option>
+      <option value="Em alocação">Em alocação</option>
       <option value="Entregue">Entregue</option>
     </select>
     <label>Prazo 1ª entrega</label>
@@ -683,6 +684,7 @@ function fmtDate(iso){if(!iso)return'—';var p=iso.split('-');return p[2]+'/'+p
 
 function getStatus(prazo,situacao){
   if(norm(situacao)==='entregue')return{label:'concluído',cls:'b-done',ord:4};
+  if(norm(situacao)==='em alocação'||norm(situacao)==='em alocacao')return{label:'no prazo',cls:'b-ok',ord:2};
   if(!prazo)return{label:'sem data',cls:'b-none',ord:3};
   if(prazo<todayISO)return{label:'atrasado',cls:'b-late',ord:0};
   if(prazo===todayISO)return{label:'hoje',cls:'b-today',ord:1};
@@ -923,7 +925,7 @@ function renderTableRows(rows){
   rows.forEach(function(row){
     var st=getStatus(row.prazo,row.situacao);
     var link=row.link||jiraLink(row.chave);
-    var sitOpts=['','Pendente','Entregue'].map(function(o){return'<option value="'+o+'"'+(row.situacao===o?' selected':'')+'>'+( o||'—')+'</option>';}).join('');
+    var sitOpts=['','Pendente','Em alocação','Entregue'].map(function(o){return'<option value="'+o+'"'+(row.situacao===o?' selected':'')+'>'+( o||'—')+'</option>';}).join('');
     var rotOpts=['','Pendente','Entregue'].map(function(o){return'<option value="'+o+'"'+(row.roteiro===o?' selected':'')+'>'+( o||'—')+'</option>';}).join('');
     // Badge de status com tooltip de observação
     var obsAttr=row.obs?(' data-obs="'+esc(row.obs)+'"'):'';
