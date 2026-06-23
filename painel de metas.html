@@ -301,6 +301,7 @@ function render(data) {
   allDemands.forEach(function (d) {
     var sit = String(d.situacao || '').toLowerCase().trim();
     if (sit === 'entregue') { done++; return; }
+    if (sit === 'em alocação' || sit === 'em alocacao') { ok++; return; }
     if (!d.prazo) return;
     if (d.prazo < todayISO) late++;
     else if (d.prazo === todayISO) today++;
