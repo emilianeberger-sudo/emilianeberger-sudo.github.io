@@ -21,21 +21,54 @@
   --warn-bg:#faeeda; --warn-text:#633806;
   --radius:8px; --radius-lg:12px;
   --yellow:#f5c400;
+  --dark-bg:#111110; --dark-card:#1a1715; --dark-card2:#262220;
+  --dark-text:#efeae0; --dark-text2:rgba(255,255,255,0.5); --dark-text3:rgba(255,255,255,0.4);
+  --dark-border:rgba(255,255,255,0.07);
 }
 body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh;}
 
-/* Header */
-header{background:#111110;padding:0 2rem;display:flex;align-items:center;height:68px;gap:16px;}
-.header-logo span{font-size:20px;font-weight:700;letter-spacing:-0.5px;color:#d0d0cc;}
-.header-logo .dot{display:inline-block;width:7px;height:7px;background:var(--yellow);border-radius:1px;margin-left:1px;margin-bottom:1px;vertical-align:baseline;}
-.header-divider{width:1px;height:28px;background:rgba(255,255,255,0.12);}
-.header-titles .title{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#fff;}
-.header-titles .subtitle{font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:.03em;}
-.header-actions{margin-left:auto;display:flex;align-items:center;gap:10px;}
-#drive-status{font-size:11px;}
-.hbtn{font-size:12px;padding:5px 12px;cursor:pointer;border-radius:99px;border:0.5px solid rgba(255,255,255,0.2);background:transparent;color:rgba(255,255,255,0.6);font-family:inherit;white-space:nowrap;transition:all .15s;}
+/* Header sofisticado */
+header{
+  background:var(--dark-bg);
+  padding:32px 2rem 28px;
+  position:relative;
+  overflow:hidden;
+}
+header::before{
+  content:'';
+  position:absolute;top:-60px;right:-40px;width:280px;height:220px;z-index:0;
+  background:radial-gradient(ellipse 60% 70% at 50% 40%, rgba(245,196,0,0.16), transparent 70%);
+  filter:blur(2px);
+  pointer-events:none;
+}
+header::after{
+  content:'';
+  position:absolute;inset:0;z-index:0;opacity:0.04;mix-blend-mode:overlay;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.header-inner{position:relative;z-index:1;display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.header-titles .eyebrow{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dark-text3);font-weight:700;margin-bottom:8px;}
+.header-titles .brandname{font-size:clamp(24px,3.2vw,36px);font-weight:700;color:var(--dark-text);letter-spacing:-0.01em;line-height:1;}
+.header-titles .brandname .accent{color:var(--yellow);}
+.header-actions{display:flex;align-items:center;gap:10px;}
+#drive-status{font-size:11px;color:var(--dark-text3);}
+.hbtn{font-size:12px;padding:6px 14px;cursor:pointer;border-radius:99px;border:0.5px solid rgba(255,255,255,0.2);background:transparent;color:rgba(255,255,255,0.6);font-family:inherit;white-space:nowrap;transition:all .15s;}
 .hbtn:hover{background:rgba(255,255,255,0.08);color:#fff;}
-.hbtn.connected{color:#82b366;border-color:#82b366;}
+.hbtn.connected{color:#97c459;border-color:#97c459;}
+
+/* Cursor glow global */
+#cursor-glow{
+  position:fixed;
+  top:0;left:0;
+  width:420px;height:420px;
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(245,196,0,0.10), transparent 70%);
+  pointer-events:none;
+  z-index:0;
+  transform:translate(-50%,-50%);
+  transition:opacity .3s ease;
+  opacity:0;
+}
 
 /* Month tabs */
 .month-tabs-wrap{background:var(--bg);border-bottom:0.5px solid var(--border);padding:0 2rem;display:flex;align-items:center;overflow-x:auto;}
@@ -57,12 +90,19 @@ header{background:#111110;padding:0 2rem;display:flex;align-items:center;height:
 .chip:hover{background:var(--bg2);}
 .chip.active{background:var(--text);color:var(--bg);border-color:var(--text);}
 
-/* Métricas */
-.metric{background:var(--bg);border-radius:var(--radius);padding:10px 14px;border:0.5px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,0.04);transition:box-shadow .15s,transform .15s;animation:fadeInUp .3s ease both;}
-.metric:hover{box-shadow:0 4px 12px rgba(0,0,0,0.08);transform:translateY(-1px);}
+/* Métricas — estilo escuro sofisticado */
+.metric{
+  background:linear-gradient(155deg,var(--dark-card2),var(--dark-card) 65%);
+  border:1px solid var(--dark-border);
+  border-radius:14px;
+  padding:14px 16px;
+  transition:transform .15s, border-color .15s;
+  animation:fadeInUp .3s ease both;
+}
+.metric:hover{transform:translateY(-2px);border-color:rgba(255,255,255,0.14);}
 .metric-active{outline:2px solid var(--yellow);outline-offset:-2px;}
-.metric .lbl{font-size:11px;color:var(--text2);margin-bottom:3px;font-weight:500;letter-spacing:.02em;}
-.metric .val{font-size:22px;font-weight:600;}
+.metric .lbl{font-size:11px;color:var(--dark-text3);margin-bottom:6px;font-weight:500;letter-spacing:.02em;}
+.metric .val{font-size:24px;font-weight:700;color:var(--dark-text);}
 
 
 
@@ -73,12 +113,12 @@ header{background:#111110;padding:0 2rem;display:flex;align-items:center;height:
 .do-animate .metric{animation:fadeInUp .3s ease both;}
 
 /* Progresso */
-.progress-wrap{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:1rem;}
-.progress-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
-.progress-label span{font-size:12px;color:var(--text2);}
-.progress-label strong{font-size:13px;color:var(--text);}
-.progress-bar-bg{background:var(--bg3);border-radius:99px;height:8px;overflow:hidden;}
-.progress-bar-fill{height:100%;border-radius:99px;background:var(--yellow);transition:width .8s cubic-bezier(.4,0,.2,1);}
+.progress-wrap{background:var(--dark-bg);border:1px solid var(--dark-border);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:1rem;}
+.progress-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.progress-label span{font-size:12px;color:var(--dark-text2);}
+.progress-label strong{font-size:13px;color:var(--dark-text);}
+.progress-bar-bg{background:rgba(255,255,255,0.08);border-radius:99px;height:8px;overflow:hidden;}
+.progress-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#854f0b,var(--yellow) 60%,#fde9a8);transition:width .8s cubic-bezier(.4,0,.2,1);}
 
 /* Badges */
 .badge{display:inline-flex;align-items:center;font-size:11px;font-weight:500;padding:2px 8px;border-radius:99px;white-space:nowrap;position:relative;}
@@ -164,24 +204,26 @@ input[type="date"]:focus{border-color:var(--info-text);background:var(--bg);outl
 </head>
 <body>
 
+<div id="cursor-glow"></div>
+
 <header>
-  <div class="header-logo"><span>resultate<span class="dot"></span></span></div>
-  <div class="header-divider"></div>
-  <div class="header-titles">
-    <div class="title">Audiovisual Resultate</div>
-    <div class="subtitle">Acompanhamento de demandas</div>
-  </div>
-  <div class="header-actions">
-    <span id="drive-status"></span>
-    <button class="hbtn" id="btn-reload" onclick="atualizarDrive()" title="Recarregar dados do Drive">atualizar</button>
-    <button class="hbtn" id="btn-backup" onclick="forceSave()" title="Salvar no Drive">salvar</button>
-    
-    <button class="hbtn" id="btn-drive" onclick="gdriveLogin()">☁ Entrar com Google</button>
+  <div class="header-inner">
+    <div class="header-titles">
+      <div class="eyebrow">Acompanhamento de demandas</div>
+      <div class="brandname">Audiovisual <span class="accent">Resultate</span></div>
+    </div>
+    <div class="header-actions">
+      <span id="drive-status"></span>
+      <button class="hbtn" id="btn-reload" onclick="atualizarDrive()" title="Recarregar dados do Drive">atualizar</button>
+      <button class="hbtn" id="btn-backup" onclick="forceSave()" title="Salvar no Drive">salvar</button>
+      <button class="hbtn" id="btn-drive" onclick="gdriveLogin()">☁ Entrar com Google</button>
+    </div>
   </div>
 </header>
 
 <div class="month-tabs-wrap" id="month-tabs-wrap"></div>
 <div id="month-view"></div>
+
 
 <!-- Modal novo mês -->
 <div class="modal-overlay" id="modal-month">
@@ -1346,6 +1388,24 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 document.querySelectorAll('.modal-overlay').forEach(function(o){
   o.addEventListener('click',function(e){if(e.target===o)o.classList.remove('open');});
 });
+
+// ---- Cursor glow ----
+(function(){
+  var glow=document.getElementById('cursor-glow');
+  if(!glow)return;
+  var raf=null,tx=0,ty=0;
+  function move(){
+    glow.style.left=tx+'px';
+    glow.style.top=ty+'px';
+    raf=null;
+  }
+  document.addEventListener('mousemove',function(e){
+    tx=e.clientX;ty=e.clientY;
+    glow.style.opacity='1';
+    if(!raf)raf=requestAnimationFrame(move);
+  });
+  document.addEventListener('mouseleave',function(){glow.style.opacity='0';});
+})();
 
 // ---- Init ----
 showWaitScreen();
