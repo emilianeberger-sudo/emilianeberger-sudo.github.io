@@ -288,10 +288,34 @@ function render(data) {
 
   var allDemands = [];
   if (data && data.months) {
+    // Detectar mês atual
+    var now = new Date();
+    var MONTHS_PT = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+    var currentMonthName = MONTHS_PT[now.getMonth()];
+    var currentYear = String(now.getFullYear());
+
+    // Procurar mês atual nos dados
+    var matchedMid = null;
+    var latestMid = null;
     Object.keys(data.months).forEach(function (mid) {
-      var m = data.months[mid];
-      if (m.demands) allDemands = allDemands.concat(m.demands);
+      var name = String(data.months[mid].name || '').toLowerCase();
+      // Verificar se o nome contém o mês e ano atual
+      if (name.includes(currentMonthName) && name.includes(currentYear)) {
+        matchedMid = mid;
+      }
+      // Guardar o último mês como fallback
+      latestMid = mid;
     });
+
+    // Usar mês atual se encontrado, senão usar o mais recente (último na ordem)
+    var targetMid = matchedMid;
+    if (!targetMid && data.monthOrder && data.monthOrder.length) {
+      targetMid = data.monthOrder[data.monthOrder.length - 1];
+    }
+
+    if (targetMid && data.months[targetMid] && data.months[targetMid].demands) {
+      allDemands = data.months[targetMid].demands;
+    }
   }
 
   var todayISO = new Date().toISOString().slice(0, 10);
