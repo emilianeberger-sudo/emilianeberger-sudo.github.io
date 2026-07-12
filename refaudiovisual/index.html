@@ -289,7 +289,7 @@ label.micro{ font-family:var(--mono); font-size:9.5px; letter-spacing:.08em; col
     <div class="cv-top">
       <button class="btn back-btn" id="backBtn">← Todos os clientes</button>
     </div>
-    <input type="file" id="logoInput" accept="image/*" style="display:none;">
+    <input type="file" id="logoInput" accept="image/*,video/*" style="display:none;">
     <div id="board"></div>
   </section>
 </div>
@@ -594,7 +594,8 @@ function logoTipografiaHTML(d){
     <div class="logo-variant" data-id="${v.id}">
       <div class="logo-display logo-display-sm" style="${editMode?'cursor:pointer;':'cursor:default;'}" ${editMode?`data-action="variant-open"`:''}
         data-id="${v.id}">
-        ${v.dataUrl ? `<img src="${v.dataUrl}">` : `<span class="plus-lg" style="font-size:18px;">+</span>`}
+        ${v.dataUrl && v.isVideo ? `<video src="${v.dataUrl}" muted loop autoplay playsinline style="width:100%;height:100%;object-fit:contain;"></video>`
+          : v.dataUrl ? `<img src="${v.dataUrl}">` : `<span class="plus-lg" style="font-size:18px;">+</span>`}
         ${v.dataUrl ? `<div class="logo-hover-actions">
           <a class="btn btn-sm" href="${v.dataUrl}" download="${escapeAttr(v.filename||v.label||'logo')}" style="pointer-events:all;">↓ Baixar</a>
           ${editMode ? `<button class="btn btn-sm btn-danger" data-action="variant-del" style="pointer-events:all;">✕</button>` : ''}
@@ -619,7 +620,9 @@ function logoTipografiaHTML(d){
             <!-- Logo principal -->
             <div class="logo-block">
               <div class="logo-display" ${editMode ? `data-action="logo-open"` : `style="cursor:default;"`}>
-                ${d.logo ? `<img src="${d.logo.dataUrl}">` : (editMode ? `<span class="plus-lg">+</span>` : '')}
+                ${d.logo && d.logo.isVideo
+                  ? `<video src="${d.logo.dataUrl}" muted loop autoplay playsinline style="width:100%;height:100%;object-fit:contain;padding:8px;"></video>`
+                  : d.logo ? `<img src="${d.logo.dataUrl}">` : (editMode ? `<span class="plus-lg">+</span>` : '')}
                 ${d.logo ? `<div class="logo-hover-actions">
                   <a class="btn btn-sm" href="${d.logo.dataUrl}" download="${escapeAttr(d.logo.filename||'logo')}" style="pointer-events:all;">↓ Baixar</a>
                   ${editMode ? `<button class="btn btn-sm btn-danger" data-action="logo-del" style="pointer-events:all;">Remover</button>` : ''}
@@ -844,13 +847,17 @@ function bindEvents(){
     if (action === 'variant-open') el.addEventListener('click', () => {
       const id = el.closest('[data-id]').dataset.id;
       const inp = document.createElement('input');
-      inp.type = 'file'; inp.accept = 'image/*';
+      inp.type = 'file'; inp.accept = 'image/*,video/*';
       inp.onchange = async () => {
         const file = inp.files[0]; if (!file) return;
-        if (file.size > 3*1024*1024){ showToast('Arquivo muito grande (máx 3MB)'); return; }
+        if (file.size > 10*1024*1024){ showToast('Arquivo muito grande (máx 10MB)'); return; }
         if (!d.logoVariants) d.logoVariants = [];
         const v = d.logoVariants.find(x => x.id === id);
-        if (v){ v.dataUrl = await fileToDataUrl(file); v.filename = file.name; }
+        if (v){
+          v.dataUrl = await fileToDataUrl(file);
+          v.filename = file.name;
+          v.isVideo = file.type.startsWith('video/');
+        }
         renderBoard(); scheduleSave(currentSlug);
       };
       inp.click();
@@ -1035,9 +1042,10 @@ function bindEvents(){
 document.getElementById('logoInput').addEventListener('change', async e => {
   const file = e.target.files[0];
   if (!file) return;
-  if (file.size > 3*1024*1024){ showToast('Arquivo muito grande (máx 3MB)'); return; }
+  if (file.size > 10*1024*1024){ showToast('Arquivo muito grande (máx 10MB)'); return; }
   const dataUrl = await fileToDataUrl(file);
-  cache[currentSlug].logo = { dataUrl, filename: file.name };
+  const isVideo = file.type.startsWith('video/');
+  cache[currentSlug].logo = { dataUrl, filename: file.name, isVideo };
   renderBoard();
   scheduleSave(currentSlug);
 });
