@@ -99,6 +99,12 @@ body{ background:var(--bg); color:var(--text); font-family:var(--sans); font-siz
 }
 .logo-display:hover .logo-hover-actions{ opacity:1; }
 .logo-block-actions{ display:flex; gap:6px; }
+.logos-col{ display:flex; flex-direction:column; gap:10px; flex:0 0 auto; }
+.logos-row{ display:flex; flex-wrap:wrap; gap:12px; align-items:flex-start; }
+.logo-variant{ display:flex; flex-direction:column; align-items:center; gap:6px; }
+.logo-display-sm{ width:90px; height:64px; border-radius:8px; }
+.variant-label{ font-family:var(--mono); font-size:10px; color:var(--text-faint); text-align:center; }
+.variant-label-input{ width:90px; font-family:var(--mono); font-size:10px; text-align:center; background:transparent; border:none; border-bottom:1px solid var(--border); color:var(--text-dim); padding:2px 0; outline:none; }
 .type-row{ display:flex; flex-wrap:wrap; gap:28px 36px; justify-content:flex-start; flex:1; min-width:220px; }
 
 /* colors — circle only, hover reveals hex, click copies */
@@ -565,8 +571,6 @@ function fontGroupItems(list, group){
 
 function logoTipografiaHTML(d){
   const c = CLIENTS.find(x => x.slug === currentSlug);
-  const legendaItems = fontGroupItems(d.fonts.legenda, 'legenda');
-  const letteringItems = fontGroupItems(d.fonts.lettering, 'lettering');
   const fams = d.fonts.families || [];
   const famItems = fams.map(f => `
     <div class="family-chip" data-id="${f.id}">
@@ -583,7 +587,25 @@ function logoTipografiaHTML(d){
               ${editMode ? `<button class="btn btn-accent btn-sm" data-action="family-add">+ Família</button>` : ''}
             </div>
           </div>` : '';
-  const showLogo = d.logo || editMode;
+
+  // variants — logoVariants array
+  const variants = d.logoVariants || [];
+  const variantCards = variants.map(v => `
+    <div class="logo-variant" data-id="${v.id}">
+      <div class="logo-display logo-display-sm" style="${editMode?'cursor:pointer;':'cursor:default;'}" ${editMode?`data-action="variant-open"`:''}
+        data-id="${v.id}">
+        ${v.dataUrl ? `<img src="${v.dataUrl}">` : `<span class="plus-lg" style="font-size:18px;">+</span>`}
+        ${v.dataUrl ? `<div class="logo-hover-actions">
+          <a class="btn btn-sm" href="${v.dataUrl}" download="${escapeAttr(v.filename||v.label||'logo')}" style="pointer-events:all;">↓ Baixar</a>
+          ${editMode ? `<button class="btn btn-sm btn-danger" data-action="variant-del" style="pointer-events:all;">✕</button>` : ''}
+        </div>` : ''}
+      </div>
+      ${editMode ? `<input type="text" class="variant-label-input" value="${escapeHtml(v.label||'')}" data-action="variant-label" placeholder="ex. Símbolo">` : (v.label ? `<div class="variant-label">${escapeHtml(v.label)}</div>` : '')}
+    </div>
+  `).join('');
+
+  const showLogoSection = d.logo || (variants.length > 0) || editMode;
+
   return `
   <section class="board-section">
     <div class="board-inner">
@@ -591,13 +613,23 @@ function logoTipografiaHTML(d){
         <span style="font-family:var(--mono); font-weight:700; font-size:18px;">${c.name}</span>
       </div>
       <div class="logo-type-row">
-        ${showLogo ? `
-        <div class="logo-block">
-          <div class="logo-display" ${editMode ? `data-action="logo-open"` : `style="cursor:default;"`}>
-            ${d.logo ? `<img src="${d.logo.dataUrl}">` : `<span class="plus-lg">+</span>`}
-            ${d.logo ? `<div class="logo-hover-actions">
-              <a class="btn btn-sm" href="${d.logo.dataUrl}" download="${escapeAttr(d.logo.filename||'logo')}" style="pointer-events:all;">↓ Baixar</a>
-              ${editMode ? `<button class="btn btn-sm btn-danger" data-action="logo-del" style="pointer-events:all;">Remover</button>` : ''}
+        ${showLogoSection ? `
+        <div class="logos-col">
+          <div class="logos-row">
+            <!-- Logo principal -->
+            <div class="logo-block">
+              <div class="logo-display" ${editMode ? `data-action="logo-open"` : `style="cursor:default;"`}>
+                ${d.logo ? `<img src="${d.logo.dataUrl}">` : (editMode ? `<span class="plus-lg">+</span>` : '')}
+                ${d.logo ? `<div class="logo-hover-actions">
+                  <a class="btn btn-sm" href="${d.logo.dataUrl}" download="${escapeAttr(d.logo.filename||'logo')}" style="pointer-events:all;">↓ Baixar</a>
+                  ${editMode ? `<button class="btn btn-sm btn-danger" data-action="logo-del" style="pointer-events:all;">Remover</button>` : ''}
+                </div>` : ''}
+              </div>
+            </div>
+            <!-- Variantes -->
+            ${variantCards}
+            ${editMode ? `<div class="logo-variant">
+              <button class="logo-display logo-display-sm" style="background:var(--surface-2); border:1px dashed var(--border); cursor:pointer; width:100%; color:var(--text-faint); font-size:11px;" data-action="variant-add">+ Variante</button>
             </div>` : ''}
           </div>
         </div>` : ''}
@@ -803,6 +835,37 @@ function bindEvents(){
 
     if (action === 'logo-open') el.addEventListener('click', () => document.getElementById('logoInput').click());
     if (action === 'logo-del') el.addEventListener('click', () => { d.logo = null; renderBoard(); scheduleSave(currentSlug); });
+
+    if (action === 'variant-add') el.addEventListener('click', () => {
+      if (!d.logoVariants) d.logoVariants = [];
+      d.logoVariants.push({ id: uid(), label:'', dataUrl:null, filename:null });
+      renderBoard(); scheduleSave(currentSlug);
+    });
+    if (action === 'variant-open') el.addEventListener('click', () => {
+      const id = el.closest('[data-id]').dataset.id;
+      const inp = document.createElement('input');
+      inp.type = 'file'; inp.accept = 'image/*';
+      inp.onchange = async () => {
+        const file = inp.files[0]; if (!file) return;
+        if (file.size > 3*1024*1024){ showToast('Arquivo muito grande (máx 3MB)'); return; }
+        if (!d.logoVariants) d.logoVariants = [];
+        const v = d.logoVariants.find(x => x.id === id);
+        if (v){ v.dataUrl = await fileToDataUrl(file); v.filename = file.name; }
+        renderBoard(); scheduleSave(currentSlug);
+      };
+      inp.click();
+    });
+    if (action === 'variant-label') el.addEventListener('input', () => {
+      const id = el.closest('[data-id]').dataset.id;
+      const v = (d.logoVariants||[]).find(x => x.id === id);
+      if (v) v.label = el.value;
+      scheduleSave(currentSlug);
+    });
+    if (action === 'variant-del') el.addEventListener('click', () => {
+      const id = el.closest('[data-id]').dataset.id;
+      d.logoVariants = (d.logoVariants||[]).filter(x => x.id !== id);
+      renderBoard(); scheduleSave(currentSlug);
+    });
 
     if (action === 'copy') el.addEventListener('click', () => {
       navigator.clipboard?.writeText('#' + el.dataset.hex.toUpperCase());
